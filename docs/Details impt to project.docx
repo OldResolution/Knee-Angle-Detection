@@ -1,0 +1,28 @@
+VD Limitation for YOUR Project
+
+Your app depends on:
+
+Bluetooth (ESP32)
+Real sensor data
+Real-time streaming
+
+👉 AVD does NOT support real BLE properly
+
+🔥 Hybrid Testing Approach
+1. Use AVD for:
+UI screens
+Graphs
+Dashboard
+Login system
+2. Use REAL PHONE for:
+BLE connection (ESP32)
+Sensor data
+Real-time alerts
+Performance testing
+
+👉 This is exactly how real companies build IoT apps.
+
+Add a “Simulation Mode” toggle in your app:
+
+ON → Use dummy/random sensor data (for AVD)
+OFF → Use real BLE data (for phone)
