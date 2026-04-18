@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'login_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -7,24 +8,692 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Home'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => const LoginScreen()),
-              );
-            },
+      backgroundColor: const Color(0xFFF9F9FA),
+      drawer: _buildDrawer(context),
+      body: Column(
+        children: [
+          _buildTopNav(context),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 48.0, vertical: 32.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHeader(),
+                  const SizedBox(height: 32),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      if (constraints.maxWidth > 900) {
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              flex: 6,
+                              child: Column(
+                                children: [
+                                  _buildLiveChartCard(context),
+                                  const SizedBox(height: 24),
+                                  Row(
+                                    children: [
+                                      Expanded(child: _buildTotalStepsCard(context)),
+                                      const SizedBox(width: 24),
+                                      Expanded(child: _buildActiveWearHoursCard(context)),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 32),
+                            Expanded(
+                              flex: 3,
+                              child: _buildSystemAnalysisPanel(context),
+                            ),
+                          ],
+                        );
+                      } else {
+                        return Column(
+                          children: [
+                            _buildLiveChartCard(context),
+                            const SizedBox(height: 24),
+                            Row(
+                              children: [
+                                Expanded(child: _buildTotalStepsCard(context)),
+                                const SizedBox(width: 24),
+                                Expanded(child: _buildActiveWearHoursCard(context)),
+                              ],
+                            ),
+                            const SizedBox(height: 32),
+                            _buildSystemAnalysisPanel(context),
+                          ],
+                        );
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          _buildFooter(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTopNav(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
+      color: Colors.white,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Builder(
+                builder: (context) => IconButton(
+                  icon: const Icon(Icons.menu, color: Color(0xFF4C3E8A)),
+                  onPressed: () {
+                    Scaffold.of(context).openDrawer();
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'The Kinetic Sanctuary',
+                style: TextStyle(
+                  color: Color(0xFF4C3E8A),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 18,
+                ),
+              ),
+            ],
+          ),
+          // Nav links - hiding on very small screens for simplicity here
+          LayoutBuilder(builder: (context, constraints) {
+            return Row(
+              children: [
+                _navLink('Dashboard', isActive: true),
+                const SizedBox(width: 32),
+                _navLink('Exercises'),
+                const SizedBox(width: 32),
+                _navLink('Recovery'),
+                const SizedBox(width: 32),
+                _navLink('Profile'),
+              ],
+            );
+          }),
+          Row(
+            children: [
+              const Icon(Icons.help_sharp, color: Color(0xFF4C3E8A), size: 20),
+              const SizedBox(width: 16),
+              const Icon(Icons.settings, color: Color(0xFF4C3E8A), size: 20),
+              const SizedBox(width: 16),
+              const CircleAvatar(
+                radius: 16,
+                backgroundColor: Color(0xFF1B3B4A),
+                child: Icon(Icons.person, color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: 16),
+              // Hidden logout for functionality, if desired
+              IconButton(
+                icon: const Icon(Icons.logout, size: 20, color: Colors.grey),
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  );
+                },
+              ),
+            ],
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _navLink(String text, {bool isActive = false}) {
+    return Text(
+      text,
+      style: TextStyle(
+        color: isActive ? const Color(0xFF4C3E8A) : Colors.grey.shade700,
+        fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: const [
+        Text(
+          'Knee Health Dashboard',
+          style: TextStyle(
+            fontSize: 32,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF4C3E8A),
+          ),
+        ),
+        SizedBox(height: 8),
+        Text(
+          'Real-time metrics and recovery insights.',
+          style: TextStyle(
+            fontSize: 16,
+            color: Colors.black54,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLiveChartCard(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5F4F7),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Live Knee Angle',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF819230),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Streaming Data Active',
+                        style: TextStyle(color: Colors.black54, fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: const [
+                      Text(
+                        '45',
+                        style: TextStyle(
+                          fontSize: 48,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF4C3E8A),
+                          height: 1,
+                        ),
+                      ),
+                      Text(
+                        '°',
+                        style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF4C3E8A),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'CURRENT FLEXION',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
+                      color: Color(0xFF4C3E8A),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 48),
+          SizedBox(
+            height: 200,
+            child: LineChart(
+              LineChartData(
+                gridData: FlGridData(show: false),
+                titlesData: FlTitlesData(
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 40,
+                      getTitlesWidget: (value, meta) {
+                        return Text('${value.toInt()}°',
+                            style: const TextStyle(fontSize: 10, color: Colors.black54));
+                      },
+                      interval: 45,
+                    ),
+                  ),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      getTitlesWidget: (value, meta) {
+                        switch (value.toInt()) {
+                          case 0:
+                            return const Text('8 AM', style: TextStyle(fontSize: 10, color: Colors.black54));
+                          case 3:
+                            return const Text('10 AM', style: TextStyle(fontSize: 10, color: Colors.black54));
+                          case 6:
+                            return const Text('12 PM', style: TextStyle(fontSize: 10, color: Colors.black54));
+                          case 9:
+                            return const Text('2 PM', style: TextStyle(fontSize: 10, color: Colors.black54));
+                          case 12:
+                            return const Text('Now', style: TextStyle(fontSize: 10, color: Colors.black54));
+                        }
+                        return const Text('');
+                      },
+                      interval: 3,
+                    ),
+                  ),
+                  rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                ),
+                borderData: FlBorderData(show: false),
+                minX: 0,
+                maxX: 12,
+                minY: 0,
+                maxY: 90,
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: const [
+                      FlSpot(0, 5),
+                      FlSpot(2, 10),
+                      FlSpot(4, 5),
+                      FlSpot(6, 40),
+                      FlSpot(7, 30),
+                      FlSpot(8.5, 5),
+                      FlSpot(11, 80),
+                      FlSpot(12, 45),
+                    ],
+                    isCurved: true,
+                    color: const Color(0xFF6750A4),
+                    barWidth: 4,
+                    isStrokeCapRound: true,
+                    dotData: FlDotData(show: false),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      gradient: LinearGradient(
+                        colors: [
+                          const Color(0xFF6750A4).withOpacity(0.2),
+                          const Color(0xFF6750A4).withOpacity(0.0),
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),
-      body: const Center(
-        child: Text(
-          'Welcome! You are logged in.',
-          style: TextStyle(fontSize: 18),
+    );
+  }
+
+  Widget _buildTotalStepsCard(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5F4F7),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD6CFF0),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.directions_walk, color: Color(0xFF4C3E8A)),
+              ),
+              const SizedBox(width: 16),
+              const Text(
+                'Total Steps',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: const [
+              Text(
+                '4,285',
+                style: TextStyle(
+                  fontSize: 36,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF4C3E8A),
+                ),
+              ),
+              SizedBox(width: 8),
+              Text(
+                '/ 6,000 goal',
+                style: TextStyle(color: Colors.black54),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: const LinearProgressIndicator(
+              value: 4285 / 6000,
+              minHeight: 8,
+              backgroundColor: Color(0xFFE2E2E6),
+              color: Color(0xFF4C3E8A),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActiveWearHoursCard(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5F4F7),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE5E0CB),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.access_time_filled, color: Color(0xFF6F701B)),
+              ),
+              const SizedBox(width: 16),
+              const Text(
+                'Active Wear Hours',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: const [
+              Text(
+                '6.5',
+                style: TextStyle(
+                  fontSize: 36,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF4C3E8A),
+                ),
+              ),
+              SizedBox(width: 8),
+              Text(
+                'hrs today',
+                style: TextStyle(color: Colors.black54),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: const LinearProgressIndicator(
+              value: 6.5 / 10.0, // Assuming 10h goal for visual demo
+              minHeight: 8,
+              backgroundColor: Color(0xFFE2E2E6),
+              color: Color(0xFF819230),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSystemAnalysisPanel(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFFE8E6EB),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'System Analysis',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF4C3E8A),
+            ),
+          ),
+          const SizedBox(height: 24),
+          // Alert 1
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.warning_amber_rounded, color: Color(0xFF819230)),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: const [
+                      Text(
+                        'Prolonged Inactivity',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Knee has been static for over 45 minutes. Consider performing micro-movements.',
+                        style: TextStyle(color: Colors.black54, fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Alert 2
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.check_circle, color: Color(0xFF4C3E8A)),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: const [
+                      Text(
+                        'Extension Target Met',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'You achieved full extension 3 times today during morning exercises.',
+                        style: TextStyle(color: Colors.black54, fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 32),
+          const Text(
+            'AI INSIGHT',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Your gait asymmetry has improved by 12% compared to last week. The current angle data suggests reduced stiffness during mid-day activity.',
+            style: TextStyle(color: Colors.black54, height: 1.5, fontSize: 14),
+          ),
+          const SizedBox(height: 32),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: () {},
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFF5A4D9A),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text('View Detailed Report ->'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFooter() {
+    return Container(
+      color: const Color(0xFFEEEEF0),
+      padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 32),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Text(
+            'The Kinetic Sanctuary',
+            style: TextStyle(
+              color: Color(0xFF4C3E8A),
+              fontWeight: FontWeight.w600,
+              fontSize: 16,
+            ),
+          ),
+          const Text(
+            '© 2024 The Kinetic Sanctuary. Clinical precision meets human-centric care.',
+            style: TextStyle(color: Colors.black54, fontSize: 13),
+          ),
+          LayoutBuilder(builder: (context, constraints) {
+            return Row(
+              children: const [
+                Text('Help Center', style: TextStyle(color: Colors.black54, fontSize: 13)),
+                SizedBox(width: 16),
+                Text('Privacy Policy', style: TextStyle(color: Colors.black54, fontSize: 13)),
+                SizedBox(width: 16),
+                Text('Settings', style: TextStyle(color: Colors.black54, fontSize: 13)),
+                SizedBox(width: 16),
+                Text('Terms of Service', style: TextStyle(color: Colors.black54, fontSize: 13)),
+              ],
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDrawer(BuildContext context) {
+    return Drawer(
+      child: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Row(
+                children: const [
+                  Icon(Icons.monitor_heart, color: Color(0xFF4C3E8A), size: 32),
+                  SizedBox(width: 16),
+                  Expanded(
+                    child: Text(
+                      'The Kinetic Sanctuary',
+                      style: TextStyle(
+                        color: Color(0xFF4C3E8A),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.dashboard, color: Color(0xFF4C3E8A)),
+              title: const Text('Dashboard', style: TextStyle(fontWeight: FontWeight.bold)),
+              selected: true,
+              selectedColor: const Color(0xFF4C3E8A),
+              onTap: () {
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.fitness_center),
+              title: const Text('Exercises'),
+              onTap: () {},
+            ),
+            ListTile(
+              leading: const Icon(Icons.healing),
+              title: const Text('Recovery'),
+              onTap: () {},
+            ),
+            ListTile(
+              leading: const Icon(Icons.person),
+              title: const Text('Profile'),
+              onTap: () {},
+            ),
+            const Spacer(),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.logout, color: Colors.grey),
+              title: const Text('Logout'),
+              onTap: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                );
+              },
+            ),
+            const SizedBox(height: 16),
+          ],
         ),
       ),
     );
