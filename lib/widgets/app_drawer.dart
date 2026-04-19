@@ -6,6 +6,8 @@ import '../screens/step_counter_screen.dart';
 import '../screens/alert_system_screen.dart';
 import '../screens/analysis_screen.dart';
 import '../screens/login_screen.dart';
+import '../screens/profile_screen.dart';
+import '../screens/settings_screen.dart';
 
 class AppDrawer extends StatefulWidget {
   final String currentRoute;
@@ -95,43 +97,49 @@ class _AppDrawerState extends State<AppDrawer> {
                 ],
               ),
             ),
-            const SizedBox(height: 16),
-            _buildDrawerItem(
-              context,
-              icon: Icons.dashboard,
-              title: 'Dashboard',
-              isSelected: widget.currentRoute == 'Dashboard',
-              targetScreen: const HomeScreen(),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    _buildDrawerItem(
+                      context,
+                      icon: Icons.dashboard,
+                      title: 'Dashboard',
+                      isSelected: widget.currentRoute == 'Dashboard',
+                      targetScreen: const HomeScreen(),
+                    ),
+                    _buildDrawerItem(
+                      context,
+                      icon: Icons.accessibility_new,
+                      title: 'Live Knee Angle',
+                      isSelected: widget.currentRoute == 'Live Knee Angle',
+                      targetScreen: const LiveAngleScreen(),
+                    ),
+                    _buildDrawerItem(
+                      context,
+                      icon: Icons.directions_walk,
+                      title: 'Step Counter',
+                      isSelected: widget.currentRoute == 'Step Counter',
+                      targetScreen: const StepCounterScreen(),
+                    ),
+                    _buildDrawerItem(
+                      context,
+                      icon: Icons.notifications_none,
+                      title: 'Alert System',
+                      isSelected: widget.currentRoute == 'Alert System',
+                      targetScreen: const AlertSystemScreen(),
+                    ),
+                    _buildDrawerItem(
+                      context,
+                      icon: Icons.bar_chart,
+                      title: 'Analysis',
+                      isSelected: widget.currentRoute == 'Analysis',
+                      targetScreen: const AnalysisScreen(),
+                    ),
+                  ],
+                ),
+              ),
             ),
-            _buildDrawerItem(
-              context,
-              icon: Icons.accessibility_new,
-              title: 'Live Knee Angle',
-              isSelected: widget.currentRoute == 'Live Knee Angle',
-              targetScreen: const LiveAngleScreen(),
-            ),
-            _buildDrawerItem(
-              context,
-              icon: Icons.directions_walk,
-              title: 'Step Counter',
-              isSelected: widget.currentRoute == 'Step Counter',
-              targetScreen: const StepCounterScreen(),
-            ),
-            _buildDrawerItem(
-              context,
-              icon: Icons.notifications_none,
-              title: 'Alert System',
-              isSelected: widget.currentRoute == 'Alert System',
-              targetScreen: const AlertSystemScreen(),
-            ),
-            _buildDrawerItem(
-              context,
-              icon: Icons.bar_chart,
-              title: 'Analysis',
-              isSelected: widget.currentRoute == 'Analysis',
-              targetScreen: const AnalysisScreen(),
-            ),
-            const Spacer(),
             Padding(
               padding: const EdgeInsets.all(24.0),
               child: Container(

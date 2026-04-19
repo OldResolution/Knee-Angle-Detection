@@ -17,7 +17,7 @@ class AnalysisScreen extends StatelessWidget {
           const AppTopNav(),
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 48.0, vertical: 32.0),
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -35,19 +35,28 @@ class AnalysisScreen extends StatelessWidget {
                     style: TextStyle(fontSize: 16, color: Colors.black54),
                   ),
                   const SizedBox(height: 32),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        flex: 2,
-                        child: _buildMetricsColumn(),
-                      ),
-                      const SizedBox(width: 32),
-                      Expanded(
-                        flex: 5,
-                        child: _buildProgressChartCard(),
-                      ),
-                    ],
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      if (constraints.maxWidth > 900) {
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(flex: 2, child: _buildMetricsColumn()),
+                            const SizedBox(width: 32),
+                            Expanded(flex: 5, child: _buildProgressChartCard()),
+                          ],
+                        );
+                      } else {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _buildProgressChartCard(),
+                            const SizedBox(height: 32),
+                            _buildMetricsColumn(),
+                          ],
+                        );
+                      }
+                    },
                   ),
                   const SizedBox(height: 32),
                   _buildAIReportCard(),
@@ -126,7 +135,7 @@ class AnalysisScreen extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Historical Flexion Trajectory', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF4C3E8A))),
+              Expanded(child: const Text('Historical Flexion Trajectory', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF4C3E8A)))),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24)),
@@ -195,7 +204,7 @@ class AnalysisScreen extends StatelessWidget {
             children: const [
               Icon(Icons.psychology, color: Color(0xFF4C3E8A), size: 28),
               SizedBox(width: 12),
-              Text('AI Kinetic Assessment', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87)),
+              Expanded(child: Text('AI Kinetic Assessment', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87))),
             ],
           ),
           const SizedBox(height: 16),

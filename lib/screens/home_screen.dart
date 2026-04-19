@@ -17,7 +17,7 @@ class HomeScreen extends StatelessWidget {
           const AppTopNav(),
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 48.0, vertical: 32.0),
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -57,11 +57,12 @@ class HomeScreen extends StatelessWidget {
                           children: [
                             _buildLiveChartCard(context),
                             const SizedBox(height: 24),
-                            Row(
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                Expanded(child: _buildTotalStepsCard(context)),
-                                const SizedBox(width: 24),
-                                Expanded(child: _buildActiveWearHoursCard(context)),
+                                _buildTotalStepsCard(context),
+                                const SizedBox(height: 24),
+                                _buildActiveWearHoursCard(context),
                               ],
                             ),
                             const SizedBox(height: 32),
@@ -119,36 +120,41 @@ class HomeScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Live Knee Angle',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Live Knee Angle',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF819230),
-                          shape: BoxShape.circle,
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF819230),
+                            shape: BoxShape.circle,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Streaming Data Active',
-                        style: TextStyle(color: Colors.black54, fontSize: 13),
-                      ),
-                    ],
-                  ),
-                ],
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: Text(
+                            'Streaming Data Active',
+                            style: TextStyle(color: Colors.black54, fontSize: 13),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
@@ -166,7 +172,7 @@ class HomeScreen extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '°',
+                        'Â°',
                         style: TextStyle(
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
@@ -201,7 +207,7 @@ class HomeScreen extends StatelessWidget {
                       showTitles: true,
                       reservedSize: 40,
                       getTitlesWidget: (value, meta) {
-                        return Text('${value.toInt()}°',
+                        return Text('${value.toInt()}Â°',
                             style: const TextStyle(fontSize: 10, color: Colors.black54));
                       },
                       interval: 45,
@@ -295,9 +301,12 @@ class HomeScreen extends StatelessWidget {
                 child: const Icon(Icons.directions_walk, color: Color(0xFF4C3E8A)),
               ),
               const SizedBox(width: 16),
-              const Text(
-                'Total Steps',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              Expanded(
+                child: const Text(
+                  'Total Steps',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),
@@ -357,9 +366,12 @@ class HomeScreen extends StatelessWidget {
                 child: const Icon(Icons.access_time_filled, color: Color(0xFF6F701B)),
               ),
               const SizedBox(width: 16),
-              const Text(
-                'Active Wear Hours',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              Expanded(
+                child: const Text(
+                  'Active Wear Hours',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),

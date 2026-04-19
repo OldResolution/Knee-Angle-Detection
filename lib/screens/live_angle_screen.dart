@@ -16,7 +16,7 @@ class LiveAngleScreen extends StatelessWidget {
           const AppTopNav(),
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 48.0, vertical: 32.0),
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -34,28 +34,37 @@ class LiveAngleScreen extends StatelessWidget {
                     style: TextStyle(fontSize: 16, color: Colors.black54),
                   ),
                   const SizedBox(height: 32),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        flex: 5,
-                        child: _buildMobilityGoalCard(),
-                      ),
-                      const SizedBox(width: 24),
-                      Expanded(
-                        flex: 3,
-                        child: _buildPainManagementCard(),
-                      ),
-                    ],
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      if (constraints.maxWidth > 900) {
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(flex: 5, child: _buildMobilityGoalCard()),
+                            const SizedBox(width: 24),
+                            Expanded(flex: 3, child: _buildPainManagementCard()),
+                          ],
+                        );
+                      } else {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _buildMobilityGoalCard(),
+                            const SizedBox(height: 24),
+                            _buildPainManagementCard(),
+                          ],
+                        );
+                      }
+                    },
                   ),
                   const SizedBox(height: 24),
-                  Row(
+                  Wrap(
+                    spacing: 24,
+                    runSpacing: 24,
                     children: [
-                      Expanded(child: _buildMetricCard('DAILY STEPS', '2,481 / 5,000', Icons.directions_walk, 0.5)),
-                      const SizedBox(width: 24),
-                      Expanded(child: _buildMetricCard('ACTIVE MINUTES', '42 min', Icons.show_chart, 0.7)),
-                      const SizedBox(width: 24),
-                      Expanded(child: _buildMetricCard('RECOVERY SCORE', 'A- Excellent', Icons.insights, 0.9)),
+                      SizedBox(width: 300, child: _buildMetricCard('DAILY STEPS', '2,481 / 5,000', Icons.directions_walk, 0.5)),
+                      SizedBox(width: 300, child: _buildMetricCard('ACTIVE MINUTES', '42 min', Icons.show_chart, 0.7)),
+                      SizedBox(width: 300, child: _buildMetricCard('RECOVERY SCORE', 'A- Excellent', Icons.insights, 0.9)),
                     ],
                   )
                 ],
@@ -75,8 +84,10 @@ class LiveAngleScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
       ),
       padding: const EdgeInsets.all(32),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 48,
+        runSpacing: 32,
         children: [
           SizedBox(
             width: 140,
@@ -95,7 +106,7 @@ class LiveAngleScreen extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: const [
                       Text(
-                        '112°',
+                        '112\u00B0',
                         style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.black87),
                       ),
                       Text(
@@ -109,7 +120,8 @@ class LiveAngleScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 48),
-          Expanded(
+          SizedBox(
+            width: 300,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -130,7 +142,7 @@ class LiveAngleScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 const Text(
-                  'Today\'s mobility goal is 120°',
+                  'Today\'s mobility goal is 120\u00B0',
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
                 ),
                 const SizedBox(height: 12),
@@ -250,12 +262,14 @@ class LiveAngleScreen extends StatelessWidget {
                 child: Icon(icon, size: 20, color: const Color(0xFF5A4D9A)),
               ),
               const SizedBox(width: 16),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.black54)),
-                  Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87)),
-                ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.black54)),
+                    Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87)),
+                  ],
+                ),
               ),
             ],
           ),

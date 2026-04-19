@@ -7,9 +7,12 @@ class AppFooter extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: const Color(0xFFEEEEF0),
-      padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 32),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 24,
+        runSpacing: 16,
         children: [
           const Text(
             'The Kinetic Sanctuary',
@@ -20,22 +23,21 @@ class AppFooter extends StatelessWidget {
             ),
           ),
           const Text(
-            '© 2024 The Kinetic Sanctuary. Clinical precision meets human-centric care.',
+            '\u00A9 2024 The Kinetic Sanctuary. Clinical precision meets human-centric care.',
             style: TextStyle(color: Colors.black54, fontSize: 13),
+            textAlign: TextAlign.center,
           ),
-          LayoutBuilder(builder: (context, constraints) {
-            return Row(
-              children: const [
-                Text('Help Center', style: TextStyle(color: Colors.black54, fontSize: 13)),
-                SizedBox(width: 16),
-                Text('Privacy Policy', style: TextStyle(color: Colors.black54, fontSize: 13)),
-                SizedBox(width: 16),
-                Text('Settings', style: TextStyle(color: Colors.black54, fontSize: 13)),
-                SizedBox(width: 16),
-                Text('Terms of Service', style: TextStyle(color: Colors.black54, fontSize: 13)),
-              ],
-            );
-          }),
+          Wrap(
+            spacing: 16,
+            runSpacing: 8,
+            alignment: WrapAlignment.center,
+            children: const [
+              Text('Help Center', style: TextStyle(color: Colors.black54, fontSize: 13)),
+              Text('Privacy Policy', style: TextStyle(color: Colors.black54, fontSize: 13)),
+              Text('Settings', style: TextStyle(color: Colors.black54, fontSize: 13)),
+              Text('Terms of Service', style: TextStyle(color: Colors.black54, fontSize: 13)),
+            ],
+          ),
         ],
       ),
     );

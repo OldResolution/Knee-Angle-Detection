@@ -17,30 +17,33 @@ class StepCounterScreen extends StatelessWidget {
           const AppTopNav(),
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 48.0, vertical: 32.0),
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text(
-                            'Daily Motion',
-                            style: TextStyle(
-                              fontSize: 32,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF4C3E8A),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: const [
+                            Text(
+                              'Daily Motion',
+                              style: TextStyle(
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF4C3E8A),
+                              ),
                             ),
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            'Tracking your kinetic journey for optimal recovery.',
-                            style: TextStyle(fontSize: 16, color: Colors.black54),
-                          ),
-                        ],
+                            SizedBox(height: 8),
+                            Text(
+                              'Tracking your kinetic journey for optimal recovery.',
+                              style: TextStyle(fontSize: 16, color: Colors.black54),
+                              overflow: TextOverflow.visible,
+                            ),
+                          ],
+                        ),
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -59,19 +62,28 @@ class StepCounterScreen extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 32),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        flex: 5,
-                        child: _buildTotalStepsCard(),
-                      ),
-                      const SizedBox(width: 24),
-                      Expanded(
-                        flex: 3,
-                        child: _buildActiveWearCard(),
-                      ),
-                    ],
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      if (constraints.maxWidth > 900) {
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(flex: 5, child: _buildTotalStepsCard()),
+                            const SizedBox(width: 24),
+                            Expanded(flex: 3, child: _buildActiveWearCard()),
+                          ],
+                        );
+                      } else {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _buildTotalStepsCard(),
+                            const SizedBox(height: 24),
+                            _buildActiveWearCard(),
+                          ],
+                        );
+                      }
+                    },
                   ),
                   const SizedBox(height: 24),
                   _buildHourlyActivityCard(),
@@ -92,10 +104,13 @@ class StepCounterScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
       ),
       padding: const EdgeInsets.all(32),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Wrap(
+        spacing: 32,
+        runSpacing: 32,
+        alignment: WrapAlignment.spaceBetween,
         children: [
-          Expanded(
+          SizedBox(
+            width: 250,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -235,13 +250,15 @@ class StepCounterScreen extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text('Hourly Activity', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87)),
-                  SizedBox(height: 8),
-                  Text('Step distribution throughout the day', style: TextStyle(color: Colors.black54)),
-                ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Text('Hourly Activity', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87)),
+                    SizedBox(height: 8),
+                    Text('Step distribution throughout the day', style: TextStyle(color: Colors.black54), overflow: TextOverflow.visible),
+                  ],
+                ),
               ),
               Container(
                 decoration: BoxDecoration(

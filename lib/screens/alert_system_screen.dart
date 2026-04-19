@@ -16,7 +16,7 @@ class AlertSystemScreen extends StatelessWidget {
           const AppTopNav(),
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 48.0, vertical: 32.0),
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -56,7 +56,7 @@ class AlertSystemScreen extends StatelessWidget {
                   const SizedBox(height: 16),
                   _buildAlertTile(
                     title: 'Mobility Goal Hit!',
-                    message: 'Congratulations! You reached your 120° mobility goal. Your active monitoring data demonstrates improved asymmetry vs last week.',
+                    message: 'Congratulations! You reached your 120\u00B0 mobility goal. Your active monitoring data demonstrates improved asymmetry vs last week.',
                     icon: Icons.auto_awesome,
                     iconColor: Colors.white,
                     bgColor: const Color(0xFFE2E0EE),
@@ -105,9 +105,11 @@ class AlertSystemScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.black87)),
+                    Expanded(child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.black87))),
+                    const SizedBox(width: 8),
                     Text(timeAgo, style: const TextStyle(fontSize: 12, color: Colors.black54)),
                   ],
                 ),

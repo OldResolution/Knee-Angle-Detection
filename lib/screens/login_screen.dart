@@ -49,6 +49,32 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _resetPassword() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter your email address above first.'), backgroundColor: Colors.orange),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      await Supabase.instance.client.auth.resetPasswordForEmail(email);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Password reset link sent! Check your email.'), backgroundColor: Colors.green),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString()), backgroundColor: Colors.red),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -143,9 +169,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
-                      onPressed: () {
-                        // TODO: Implement forgot password
-                      },
+                      onPressed: _isLoading ? null : _resetPassword,
                       child: const Text('Forgot Password?'),
                     ),
                   ),
