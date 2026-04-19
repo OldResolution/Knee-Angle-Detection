@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../screens/login_screen.dart';
 
 class AppTopNav extends StatelessWidget {
@@ -47,7 +48,9 @@ class AppTopNav extends StatelessWidget {
               const SizedBox(width: 16),
               IconButton(
                 icon: const Icon(Icons.logout, size: 20, color: Colors.grey),
-                onPressed: () {
+                onPressed: () async {
+                  await Supabase.instance.client.auth.signOut();
+                  if (!context.mounted) return;
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(builder: (_) => const LoginScreen()),

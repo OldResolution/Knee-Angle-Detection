@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../screens/home_screen.dart';
 import '../screens/live_angle_screen.dart';
 import '../screens/step_counter_screen.dart';
@@ -6,10 +7,38 @@ import '../screens/alert_system_screen.dart';
 import '../screens/analysis_screen.dart';
 import '../screens/login_screen.dart';
 
-class AppDrawer extends StatelessWidget {
+class AppDrawer extends StatefulWidget {
   final String currentRoute;
 
   const AppDrawer({super.key, required this.currentRoute});
+
+  @override
+  State<AppDrawer> createState() => _AppDrawerState();
+}
+
+class _AppDrawerState extends State<AppDrawer> {
+  late Future<Map<String, dynamic>?> _profileFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _profileFuture = _fetchProfile();
+  }
+
+  Future<Map<String, dynamic>?> _fetchProfile() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return null;
+    try {
+      final data = await Supabase.instance.client
+          .from('profiles')
+          .select()
+          .eq('id', user.id)
+          .single();
+      return data;
+    } catch (e) {
+      return null;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -71,35 +100,35 @@ class AppDrawer extends StatelessWidget {
               context,
               icon: Icons.dashboard,
               title: 'Dashboard',
-              isSelected: currentRoute == 'Dashboard',
+              isSelected: widget.currentRoute == 'Dashboard',
               targetScreen: const HomeScreen(),
             ),
             _buildDrawerItem(
               context,
               icon: Icons.accessibility_new,
               title: 'Live Knee Angle',
-              isSelected: currentRoute == 'Live Knee Angle',
+              isSelected: widget.currentRoute == 'Live Knee Angle',
               targetScreen: const LiveAngleScreen(),
             ),
             _buildDrawerItem(
               context,
               icon: Icons.directions_walk,
               title: 'Step Counter',
-              isSelected: currentRoute == 'Step Counter',
+              isSelected: widget.currentRoute == 'Step Counter',
               targetScreen: const StepCounterScreen(),
             ),
             _buildDrawerItem(
               context,
               icon: Icons.notifications_none,
               title: 'Alert System',
-              isSelected: currentRoute == 'Alert System',
+              isSelected: widget.currentRoute == 'Alert System',
               targetScreen: const AlertSystemScreen(),
             ),
             _buildDrawerItem(
               context,
               icon: Icons.bar_chart,
               title: 'Analysis',
-              isSelected: currentRoute == 'Analysis',
+              isSelected: widget.currentRoute == 'Analysis',
               targetScreen: const AnalysisScreen(),
             ),
             const Spacer(),
@@ -121,18 +150,29 @@ class AppDrawer extends StatelessWidget {
                           child: Icon(Icons.person, color: Color(0xFF332A7C), size: 18),
                         ),
                         const SizedBox(width: 12),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            Text(
-                              'Dr. Aris Thorne',
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87),
-                            ),
-                            Text(
-                              'Attending Specialist',
-                              style: TextStyle(color: Colors.black54, fontSize: 11),
-                            ),
-                          ],
+                        Expanded(
+                          child: FutureBuilder<Map<String, dynamic>?>(
+                            future: _profileFuture,
+                            builder: (context, snapshot) {
+                              final name = snapshot.data?['name'] as String? ?? 'Loading...';
+                              const role = 'Patient';
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    name,
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const Text(
+                                    role,
+                                    style: TextStyle(color: Colors.black54, fontSize: 11),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
                         ),
                       ],
                     ),
@@ -140,7 +180,9 @@ class AppDrawer extends StatelessWidget {
                     SizedBox(
                       width: double.infinity,
                       child: TextButton(
-                        onPressed: () {
+                        onPressed: () async {
+                          await Supabase.instance.client.auth.signOut();
+                          if (!context.mounted) return;
                           Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(builder: (_) => const LoginScreen()),
@@ -221,3 +263,4 @@ class AppDrawer extends StatelessWidget {
     );
   }
 }
+
