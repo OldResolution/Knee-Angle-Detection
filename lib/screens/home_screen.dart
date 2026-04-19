@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'login_screen.dart';
+import '../widgets/app_drawer.dart';
+import '../widgets/app_top_nav.dart';
+import '../widgets/app_footer.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -9,10 +11,10 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9FA),
-      drawer: _buildDrawer(context),
+      drawer: const AppDrawer(currentRoute: 'Dashboard'),
       body: Column(
         children: [
-          _buildTopNav(context),
+          const AppTopNav(),
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 48.0, vertical: 32.0),
@@ -73,89 +75,8 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
           ),
-          _buildFooter(),
+          const AppFooter(),
         ],
-      ),
-    );
-  }
-
-  Widget _buildTopNav(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
-      color: Colors.white,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Builder(
-                builder: (context) => IconButton(
-                  icon: const Icon(Icons.menu, color: Color(0xFF4C3E8A)),
-                  onPressed: () {
-                    Scaffold.of(context).openDrawer();
-                  },
-                ),
-              ),
-              const SizedBox(width: 8),
-              const Text(
-                'The Kinetic Sanctuary',
-                style: TextStyle(
-                  color: Color(0xFF4C3E8A),
-                  fontWeight: FontWeight.w700,
-                  fontSize: 18,
-                ),
-              ),
-            ],
-          ),
-          // Nav links - hiding on very small screens for simplicity here
-          LayoutBuilder(builder: (context, constraints) {
-            return Row(
-              children: [
-                _navLink('Dashboard', isActive: true),
-                const SizedBox(width: 32),
-                _navLink('Exercises'),
-                const SizedBox(width: 32),
-                _navLink('Recovery'),
-                const SizedBox(width: 32),
-                _navLink('Profile'),
-              ],
-            );
-          }),
-          Row(
-            children: [
-              const Icon(Icons.help_sharp, color: Color(0xFF4C3E8A), size: 20),
-              const SizedBox(width: 16),
-              const Icon(Icons.settings, color: Color(0xFF4C3E8A), size: 20),
-              const SizedBox(width: 16),
-              const CircleAvatar(
-                radius: 16,
-                backgroundColor: Color(0xFF1B3B4A),
-                child: Icon(Icons.person, color: Colors.white, size: 20),
-              ),
-              const SizedBox(width: 16),
-              // Hidden logout for functionality, if desired
-              IconButton(
-                icon: const Icon(Icons.logout, size: 20, color: Colors.grey),
-                onPressed: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (_) => const LoginScreen()),
-                  );
-                },
-              ),
-            ],
-          )
-        ],
-      ),
-    );
-  }
-
-  Widget _navLink(String text, {bool isActive = false}) {
-    return Text(
-      text,
-      style: TextStyle(
-        color: isActive ? const Color(0xFF4C3E8A) : Colors.grey.shade700,
-        fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
       ),
     );
   }
@@ -590,111 +511,6 @@ class HomeScreen extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildFooter() {
-    return Container(
-      color: const Color(0xFFEEEEF0),
-      padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 32),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          const Text(
-            'The Kinetic Sanctuary',
-            style: TextStyle(
-              color: Color(0xFF4C3E8A),
-              fontWeight: FontWeight.w600,
-              fontSize: 16,
-            ),
-          ),
-          const Text(
-            '© 2024 The Kinetic Sanctuary. Clinical precision meets human-centric care.',
-            style: TextStyle(color: Colors.black54, fontSize: 13),
-          ),
-          LayoutBuilder(builder: (context, constraints) {
-            return Row(
-              children: const [
-                Text('Help Center', style: TextStyle(color: Colors.black54, fontSize: 13)),
-                SizedBox(width: 16),
-                Text('Privacy Policy', style: TextStyle(color: Colors.black54, fontSize: 13)),
-                SizedBox(width: 16),
-                Text('Settings', style: TextStyle(color: Colors.black54, fontSize: 13)),
-                SizedBox(width: 16),
-                Text('Terms of Service', style: TextStyle(color: Colors.black54, fontSize: 13)),
-              ],
-            );
-          }),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDrawer(BuildContext context) {
-    return Drawer(
-      child: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Row(
-                children: const [
-                  Icon(Icons.monitor_heart, color: Color(0xFF4C3E8A), size: 32),
-                  SizedBox(width: 16),
-                  Expanded(
-                    child: Text(
-                      'The Kinetic Sanctuary',
-                      style: TextStyle(
-                        color: Color(0xFF4C3E8A),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.dashboard, color: Color(0xFF4C3E8A)),
-              title: const Text('Dashboard', style: TextStyle(fontWeight: FontWeight.bold)),
-              selected: true,
-              selectedColor: const Color(0xFF4C3E8A),
-              onTap: () {
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.fitness_center),
-              title: const Text('Exercises'),
-              onTap: () {},
-            ),
-            ListTile(
-              leading: const Icon(Icons.healing),
-              title: const Text('Recovery'),
-              onTap: () {},
-            ),
-            ListTile(
-              leading: const Icon(Icons.person),
-              title: const Text('Profile'),
-              onTap: () {},
-            ),
-            const Spacer(),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.logout, color: Colors.grey),
-              title: const Text('Logout'),
-              onTap: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (_) => const LoginScreen()),
-                );
-              },
-            ),
-            const SizedBox(height: 16),
-          ],
-        ),
       ),
     );
   }
