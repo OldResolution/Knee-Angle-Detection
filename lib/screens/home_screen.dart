@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../widgets/app_drawer.dart';
 import '../widgets/app_top_nav.dart';
-import '../widgets/app_footer.dart';
+import '../widgets/responsive/responsive_layout.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -17,15 +17,18 @@ class HomeScreen extends StatelessWidget {
           const AppTopNav(),
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+              padding: EdgeInsets.symmetric(
+                horizontal: ResponsiveLayout.horizontalPadding(context),
+                vertical: ResponsiveLayout.verticalPadding(context),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildHeader(),
+                  _buildHeader(context),
                   const SizedBox(height: 32),
                   LayoutBuilder(
                     builder: (context, constraints) {
-                      if (constraints.maxWidth > 900) {
+                      if (constraints.maxWidth > ResponsiveLayout.tabletMaxWidth) {
                         return Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -76,26 +79,25 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
           ),
-          const AppFooter(),
         ],
       ),
     );
   }
 
-  Widget _buildHeader() {
-    return const Column(
+  Widget _buildHeader(BuildContext context) {
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Knee Health Dashboard',
           style: TextStyle(
-            fontSize: 32,
+            fontSize: ResponsiveLayout.headlineSize(context),
             fontWeight: FontWeight.bold,
-            color: Color(0xFF4C3E8A),
+            color: const Color(0xFF4C3E8A),
           ),
         ),
-        SizedBox(height: 8),
-        Text(
+        const SizedBox(height: 8),
+        const Text(
           'Real-time metrics and recovery insights.',
           style: TextStyle(
             fontSize: 16,

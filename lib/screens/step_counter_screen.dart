@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../widgets/app_drawer.dart';
 import '../widgets/app_top_nav.dart';
-import '../widgets/app_footer.dart';
+import '../widgets/responsive/responsive_layout.dart';
 
 class StepCounterScreen extends StatelessWidget {
   const StepCounterScreen({super.key});
@@ -17,27 +17,30 @@ class StepCounterScreen extends StatelessWidget {
           const AppTopNav(),
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+              padding: EdgeInsets.symmetric(
+                horizontal: ResponsiveLayout.horizontalPadding(context),
+                vertical: ResponsiveLayout.verticalPadding(context),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               'Daily Motion',
                               style: TextStyle(
-                                fontSize: 32,
+                                fontSize: ResponsiveLayout.headlineSize(context),
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF4C3E8A),
+                                color: const Color(0xFF4C3E8A),
                               ),
                             ),
-                            SizedBox(height: 8),
-                            Text(
+                            const SizedBox(height: 8),
+                            const Text(
                               'Tracking your kinetic journey for optimal recovery.',
                               style: TextStyle(fontSize: 16, color: Colors.black54),
                               overflow: TextOverflow.visible,
@@ -64,72 +67,73 @@ class StepCounterScreen extends StatelessWidget {
                   const SizedBox(height: 32),
                   LayoutBuilder(
                     builder: (context, constraints) {
-                      if (constraints.maxWidth > 900) {
+                      if (constraints.maxWidth > ResponsiveLayout.tabletMaxWidth) {
                         return Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(flex: 5, child: _buildTotalStepsCard()),
+                            Expanded(flex: 5, child: _buildTotalStepsCard(context)),
                             const SizedBox(width: 24),
-                            Expanded(flex: 3, child: _buildActiveWearCard()),
+                            Expanded(flex: 3, child: _buildActiveWearCard(context)),
                           ],
                         );
                       } else {
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            _buildTotalStepsCard(),
+                            _buildTotalStepsCard(context),
                             const SizedBox(height: 24),
-                            _buildActiveWearCard(),
+                            _buildActiveWearCard(context),
                           ],
                         );
                       }
                     },
                   ),
                   const SizedBox(height: 24),
-                  _buildHourlyActivityCard(),
+                  _buildHourlyActivityCard(context),
                 ],
               ),
             ),
           ),
-          const AppFooter(),
         ],
       ),
     );
   }
 
-  Widget _buildTotalStepsCard() {
+  Widget _buildTotalStepsCard(BuildContext context) {
+    final isMobile = ResponsiveLayout.isMobile(context);
+
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFFEDE9F5),
         borderRadius: BorderRadius.circular(16),
       ),
-      padding: const EdgeInsets.all(32),
-      child: Wrap(
-        spacing: 32,
-        runSpacing: 32,
-        alignment: WrapAlignment.spaceBetween,
-        children: [
-          SizedBox(
-            width: 250,
-            child: Column(
+      padding: EdgeInsets.all(isMobile ? 16 : 24),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isNarrow = constraints.maxWidth <= ResponsiveLayout.mobileMaxWidth;
+
+          if (isNarrow) {
+            return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text('Total Steps', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)),
                 const SizedBox(height: 8),
                 const Text('You\'re making excellent progress today.', style: TextStyle(color: Colors.black54)),
-                const SizedBox(height: 32),
-                const Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
+                const SizedBox(height: 20),
+                const Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.end,
+                  spacing: 8,
                   children: [
-                    Text('6,432', style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold, color: Color(0xFF4C3E8A))),
-                    SizedBox(width: 8),
-                    Text('/ 8,000', style: TextStyle(fontSize: 18, color: Colors.black54)),
+                    Text('6,432', style: TextStyle(fontSize: 38, fontWeight: FontWeight.bold, color: Color(0xFF4C3E8A))),
+                    Padding(
+                      padding: EdgeInsets.only(bottom: 6),
+                      child: Text('/ 8,000', style: TextStyle(fontSize: 16, color: Colors.black54)),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
                     color: const Color(0xFFE2DCEC),
                     borderRadius: BorderRadius.circular(16),
@@ -143,47 +147,106 @@ class StepCounterScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(
-            width: 180,
-            height: 180,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                CircularProgressIndicator(
-                  value: 0.8,
-                  strokeWidth: 20,
-                  backgroundColor: Color(0xFFEFEFFB),
-                  color: Color(0xFF4C3E8A),
-                ),
-                Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.directions_walk, color: Color(0xFF4C3E8A), size: 32),
-                      SizedBox(height: 8),
-                      Text('80%', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87)),
-                      Text('OF GOAL', style: TextStyle(fontSize: 10, color: Colors.black54, letterSpacing: 1.1)),
-                    ],
+                const SizedBox(height: 20),
+                const Center(
+                  child: SizedBox(
+                    width: 150,
+                    height: 150,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        CircularProgressIndicator(
+                          value: 0.8,
+                          strokeWidth: 14,
+                          backgroundColor: Color(0xFFEFEFFB),
+                          color: Color(0xFF4C3E8A),
+                        ),
+                        Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.directions_walk, color: Color(0xFF4C3E8A), size: 28),
+                              SizedBox(height: 6),
+                              Text('80%', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black87)),
+                              Text('OF GOAL', style: TextStyle(fontSize: 10, color: Colors.black54, letterSpacing: 1.1)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
-            ),
-          )
-        ],
+            );
+          }
+
+          return const Wrap(
+            spacing: 24,
+            runSpacing: 24,
+            alignment: WrapAlignment.spaceBetween,
+            children: [
+              SizedBox(
+                width: 250,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Total Steps', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87)),
+                    SizedBox(height: 8),
+                    Text('You\'re making excellent progress today.', style: TextStyle(color: Colors.black54)),
+                    SizedBox(height: 32),
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.end,
+                      spacing: 8,
+                      children: [
+                        Text('6,432', style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold, color: Color(0xFF4C3E8A))),
+                        Text('/ 8,000', style: TextStyle(fontSize: 18, color: Colors.black54)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(
+                width: 180,
+                height: 180,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    CircularProgressIndicator(
+                      value: 0.8,
+                      strokeWidth: 20,
+                      backgroundColor: Color(0xFFEFEFFB),
+                      color: Color(0xFF4C3E8A),
+                    ),
+                    Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.directions_walk, color: Color(0xFF4C3E8A), size: 32),
+                          SizedBox(height: 8),
+                          Text('80%', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87)),
+                          Text('OF GOAL', style: TextStyle(fontSize: 10, color: Colors.black54, letterSpacing: 1.1)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            ],
+          );
+        },
       ),
     );
   }
 
-  Widget _buildActiveWearCard() {
+  Widget _buildActiveWearCard(BuildContext context) {
+    final isMobile = ResponsiveLayout.isMobile(context);
+
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFFF4F3F8),
         borderRadius: BorderRadius.circular(16),
       ),
-      padding: const EdgeInsets.all(32),
+      padding: EdgeInsets.all(isMobile ? 16 : 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -204,16 +267,28 @@ class StepCounterScreen extends StatelessWidget {
           const SizedBox(height: 24),
           const Text('Total active hours wearing the kinetic cap today.', style: TextStyle(color: Colors.black54)),
           const SizedBox(height: 24),
-          const Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text('4', style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.black87)),
-              Text('h ', style: TextStyle(fontSize: 20, color: Colors.black87)),
-              Text('15', style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.black87)),
-              Text('m', style: TextStyle(fontSize: 20, color: Colors.black87)),
-            ],
-          ),
+          isMobile
+              ? const Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.end,
+                  spacing: 4,
+                  children: [
+                    Text('4', style: TextStyle(fontSize: 34, fontWeight: FontWeight.bold, color: Colors.black87)),
+                    Text('h', style: TextStyle(fontSize: 18, color: Colors.black87)),
+                    SizedBox(width: 6),
+                    Text('15', style: TextStyle(fontSize: 34, fontWeight: FontWeight.bold, color: Colors.black87)),
+                    Text('m', style: TextStyle(fontSize: 18, color: Colors.black87)),
+                  ],
+                )
+              : const Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text('4', style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.black87)),
+                    Text('h ', style: TextStyle(fontSize: 20, color: Colors.black87)),
+                    Text('15', style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.black87)),
+                    Text('m', style: TextStyle(fontSize: 20, color: Colors.black87)),
+                  ],
+                ),
           const SizedBox(height: 32),
           ClipRRect(
             borderRadius: BorderRadius.circular(4),
@@ -225,25 +300,36 @@ class StepCounterScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          const Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Target: 6 hours', style: TextStyle(fontSize: 12, color: Colors.black54)),
-              Text('1h 45m remaining', style: TextStyle(fontSize: 12, color: Colors.black87, fontWeight: FontWeight.w600)),
-            ],
-          ),
+          isMobile
+              ? const Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    Text('Target: 6 hours', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                    Text('1h 45m remaining', style: TextStyle(fontSize: 12, color: Colors.black87, fontWeight: FontWeight.w600)),
+                  ],
+                )
+              : const Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Target: 6 hours', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                    Text('1h 45m remaining', style: TextStyle(fontSize: 12, color: Colors.black87, fontWeight: FontWeight.w600)),
+                  ],
+                ),
         ],
       ),
     );
   }
 
-  Widget _buildHourlyActivityCard() {
+  Widget _buildHourlyActivityCard(BuildContext context) {
+    final isMobile = ResponsiveLayout.isMobile(context);
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
       ),
-      padding: const EdgeInsets.all(32),
+      padding: EdgeInsets.all(isMobile ? 16 : 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -260,7 +346,8 @@ class StepCounterScreen extends StatelessWidget {
                   ],
                 ),
               ),
-              Container(
+              if (!isMobile)
+                Container(
                 decoration: BoxDecoration(
                   color: const Color(0xFFF5F4F7),
                   borderRadius: BorderRadius.circular(24),
@@ -284,10 +371,10 @@ class StepCounterScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-              )
+                )
             ],
           ),
-          const SizedBox(height: 48),
+          SizedBox(height: isMobile ? 28 : 48),
           SizedBox(
             height: 200,
             child: BarChart(

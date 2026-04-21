@@ -10,7 +10,11 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.6
+  flutter_blue_plus: ^1.35.5
   fl_chart: ^1.2.0
+  flutter_riverpod: ^2.6.1
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
   supabase_flutter: ^2.12.4
   flutter_dotenv:
   shared_preferences: ^2.5.5

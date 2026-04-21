@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/app_drawer.dart';
 import '../widgets/app_top_nav.dart';
-import '../widgets/app_footer.dart';
+import '../widgets/responsive/responsive_layout.dart';
 
 class AlertSystemScreen extends StatelessWidget {
   const AlertSystemScreen({super.key});
@@ -16,16 +16,19 @@ class AlertSystemScreen extends StatelessWidget {
           const AppTopNav(),
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+              padding: EdgeInsets.symmetric(
+                horizontal: ResponsiveLayout.horizontalPadding(context),
+                vertical: ResponsiveLayout.verticalPadding(context),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Alert System (Inbox)',
                     style: TextStyle(
-                      fontSize: 32,
+                      fontSize: ResponsiveLayout.headlineSize(context),
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF4C3E8A),
+                      color: const Color(0xFF4C3E8A),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -67,7 +70,6 @@ class AlertSystemScreen extends StatelessWidget {
               ),
             ),
           ),
-          const AppFooter(),
         ],
       ),
     );

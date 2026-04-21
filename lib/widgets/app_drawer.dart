@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:math' as math;
 import '../screens/home_screen.dart';
 import '../screens/live_angle_screen.dart';
 import '../screens/step_counter_screen.dart';
 import '../screens/alert_system_screen.dart';
 import '../screens/analysis_screen.dart';
 import '../screens/login_screen.dart';
-import '../screens/profile_screen.dart';
-import '../screens/settings_screen.dart';
+import 'responsive/responsive_layout.dart';
 
 class AppDrawer extends StatefulWidget {
   final String currentRoute;
@@ -44,7 +44,11 @@ class _AppDrawerState extends State<AppDrawer> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final horizontalPadding = ResponsiveLayout.isMobile(context) ? 16.0 : 24.0;
+
     return Drawer(
+      width: math.min(320, screenWidth * 0.82),
       backgroundColor: const Color(0xFFFCFCFD),
       surfaceTintColor: Colors.transparent,
       shape: const RoundedRectangleBorder(
@@ -55,7 +59,7 @@ class _AppDrawerState extends State<AppDrawer> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 24.0),
               child: Row(
                 children: [
                   Container(
@@ -141,7 +145,7 @@ class _AppDrawerState extends State<AppDrawer> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(24.0),
+              padding: EdgeInsets.all(horizontalPadding),
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(

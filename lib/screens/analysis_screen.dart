@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../widgets/app_drawer.dart';
 import '../widgets/app_top_nav.dart';
-import '../widgets/app_footer.dart';
+import '../widgets/responsive/responsive_layout.dart';
 
 class AnalysisScreen extends StatelessWidget {
   const AnalysisScreen({super.key});
@@ -17,16 +17,19 @@ class AnalysisScreen extends StatelessWidget {
           const AppTopNav(),
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+              padding: EdgeInsets.symmetric(
+                horizontal: ResponsiveLayout.horizontalPadding(context),
+                vertical: ResponsiveLayout.verticalPadding(context),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Performance & Analysis',
                     style: TextStyle(
-                      fontSize: 32,
+                      fontSize: ResponsiveLayout.headlineSize(context),
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF4C3E8A),
+                      color: const Color(0xFF4C3E8A),
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -37,7 +40,7 @@ class AnalysisScreen extends StatelessWidget {
                   const SizedBox(height: 32),
                   LayoutBuilder(
                     builder: (context, constraints) {
-                      if (constraints.maxWidth > 900) {
+                      if (constraints.maxWidth > ResponsiveLayout.tabletMaxWidth) {
                         return Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -64,7 +67,6 @@ class AnalysisScreen extends StatelessWidget {
               ),
             ),
           ),
-          const AppFooter(),
         ],
       ),
     );

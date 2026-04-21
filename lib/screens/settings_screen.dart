@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../widgets/app_drawer.dart';
 import '../widgets/app_top_nav.dart';
-import '../widgets/app_footer.dart';
 import '../services/preferences_service.dart';
+import '../widgets/responsive/responsive_layout.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -38,14 +38,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Expanded(
             child: LayoutBuilder(
               builder: (context, constraints) {
-                if (constraints.maxWidth > 900) {
+                if (constraints.maxWidth > ResponsiveLayout.tabletMaxWidth) {
                   return Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _buildDesktopSidebar(),
+                      _buildDesktopSidebar(context),
                       Expanded(
                         child: SingleChildScrollView(
-                          padding: const EdgeInsets.all(48.0),
+                          padding: EdgeInsets.all(ResponsiveLayout.isDesktop(context) ? 40 : 32),
                           child: _buildActiveContent(),
                         ),
                       ),
@@ -57,7 +57,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       children: [
                         _buildMobileNav(),
                         Padding(
-                          padding: const EdgeInsets.all(24.0),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: ResponsiveLayout.horizontalPadding(context),
+                            vertical: ResponsiveLayout.verticalPadding(context),
+                          ),
                           child: _buildActiveContent(),
                         ),
                       ],
@@ -67,15 +70,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               },
             ),
           ),
-          const AppFooter(),
         ],
       ),
     );
   }
 
-  Widget _buildDesktopSidebar() {
+  Widget _buildDesktopSidebar(BuildContext context) {
     return Container(
-      width: 280,
+      width: ResponsiveLayout.isDesktop(context) ? 280 : 220,
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -89,22 +91,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
       padding: const EdgeInsets.symmetric(vertical: 32),
       child: Column(
         children: [
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 24),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: ResponsiveLayout.isDesktop(context) ? 24 : 16),
             child: Row(
               children: [
                 CircleAvatar(
-                  radius: 20,
-                  backgroundColor: Color(0xFF1B3B4A),
-                  child: Icon(Icons.person, color: Colors.white, size: 24),
+                  radius: ResponsiveLayout.isDesktop(context) ? 20 : 18,
+                  backgroundColor: const Color(0xFF1B3B4A),
+                  child: Icon(Icons.person, color: Colors.white, size: ResponsiveLayout.isDesktop(context) ? 24 : 20),
                 ),
-                SizedBox(width: 16),
+                const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Settings', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                      Text('Manage your recovery atelier', style: TextStyle(fontSize: 10, color: Colors.black54), overflow: TextOverflow.ellipsis),
+                      Text('Settings', style: TextStyle(fontWeight: FontWeight.bold, fontSize: ResponsiveLayout.isDesktop(context) ? 16 : 14)),
+                      const Text('Manage your recovery atelier', style: TextStyle(fontSize: 10, color: Colors.black54), overflow: TextOverflow.ellipsis),
                     ],
                   ),
                 ),
@@ -160,7 +162,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       color: Colors.white,
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
         child: Row(
           children: [
             _buildMobileChip('Account Preferences'),
@@ -198,45 +200,65 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildAccountPreferences() {
+    final isMobile = ResponsiveLayout.isMobile(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Account Preferences',
-          style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.black87),
+          style: TextStyle(fontSize: ResponsiveLayout.headlineSize(context), fontWeight: FontWeight.bold, color: Colors.black87),
         ),
         const SizedBox(height: 8),
         const Text(
           'Manage your personal details and system credentials.',
           style: TextStyle(color: Colors.black54, fontSize: 16),
         ),
-        const SizedBox(height: 48),
-        Wrap(
-          spacing: 32,
-          runSpacing: 32,
-          crossAxisAlignment: WrapCrossAlignment.start,
-          children: [
-            SizedBox(
-              width: 400,
-              child: Column(
+        SizedBox(height: isMobile ? 24 : 40),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth <= ResponsiveLayout.mobileMaxWidth) {
+              return Column(
                 children: [
                   _buildProfileDetailsCard(),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 20),
                   _buildSecurityCard(),
-                ],
-              ),
-            ),
-            SizedBox(
-              width: 350,
-              child: Column(
-                children: [
+                  const SizedBox(height: 20),
                   _buildDataSyncCard(),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 20),
                   _buildAlertPreferencesCard(),
                 ],
-              ),
-            )
-          ],
+              );
+            }
+
+            return Wrap(
+              spacing: 24,
+              runSpacing: 24,
+              crossAxisAlignment: WrapCrossAlignment.start,
+              children: [
+                SizedBox(
+                  width: 400,
+                  child: Column(
+                    children: [
+                      _buildProfileDetailsCard(),
+                      const SizedBox(height: 24),
+                      _buildSecurityCard(),
+                    ],
+                  ),
+                ),
+                SizedBox(
+                  width: 350,
+                  child: Column(
+                    children: [
+                      _buildDataSyncCard(),
+                      const SizedBox(height: 24),
+                      _buildAlertPreferencesCard(),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
         )
       ],
     );
@@ -416,19 +438,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildLegacySettings() {
+    final isMobile = ResponsiveLayout.isMobile(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'System Calibration',
-          style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.black87),
+          style: TextStyle(fontSize: ResponsiveLayout.headlineSize(context), fontWeight: FontWeight.bold, color: Colors.black87),
         ),
         const SizedBox(height: 8),
         const Text(
           'Manage underlying hardware sensors and connectivity layers.',
           style: TextStyle(color: Colors.black54, fontSize: 16),
         ),
-        const SizedBox(height: 48),
+        SizedBox(height: isMobile ? 24 : 40),
         Container(
           decoration: BoxDecoration(
             color: Colors.white,
@@ -486,8 +510,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildMockupCard({required String title, required Widget child, IconData? icon, Widget? topRightWidget}) {
+    final isMobile = ResponsiveLayout.isMobile(context);
+
     return Container(
-      padding: const EdgeInsets.all(32),
+      padding: EdgeInsets.all(isMobile ? 16 : 24),
       decoration: BoxDecoration(
         color: const Color(0xFFFAF9FB), // Matching light grey mockup BG
         borderRadius: BorderRadius.circular(16),
@@ -503,13 +529,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
               Text(
                 title,
-                style: const TextStyle(fontSize: 18, color: Color(0xFF5A4D9A), fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: isMobile ? 16 : 18, color: const Color(0xFF5A4D9A), fontWeight: FontWeight.bold),
               ),
               if (topRightWidget != null) const Spacer(),
               if (topRightWidget != null) topRightWidget,
             ],
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: isMobile ? 16 : 24),
           child,
         ],
       ),

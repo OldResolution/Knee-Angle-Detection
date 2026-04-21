@@ -3,14 +3,18 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../screens/login_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/settings_screen.dart';
+import 'responsive/responsive_layout.dart';
 
 class AppTopNav extends StatelessWidget {
   const AppTopNav({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = ResponsiveLayout.isMobile(context);
+    final horizontalPadding = ResponsiveLayout.horizontalPadding(context);
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: isMobile ? 10 : 16),
       color: Colors.white,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -20,20 +24,20 @@ class AppTopNav extends StatelessWidget {
               children: [
                 Builder(
                   builder: (context) => IconButton(
-                    icon: const Icon(Icons.menu, color: Color(0xFF4C3E8A)),
+                    icon: Icon(Icons.menu, color: const Color(0xFF4C3E8A), size: isMobile ? 20 : 24),
                     onPressed: () {
                       Scaffold.of(context).openDrawer();
                     },
                   ),
                 ),
                 const SizedBox(width: 8),
-                const Expanded(
+                Expanded(
                   child: Text(
                     'The Kinetic Sanctuary',
                     style: TextStyle(
-                      color: Color(0xFF4C3E8A),
+                      color: const Color(0xFF4C3E8A),
                       fontWeight: FontWeight.w700,
-                      fontSize: 18,
+                      fontSize: isMobile ? 15 : 18,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -43,12 +47,14 @@ class AppTopNav extends StatelessWidget {
           ),
           Row(
             children: [
-              const Icon(Icons.help_sharp, color: Color(0xFF4C3E8A), size: 20),
-              const SizedBox(width: 16),
+              if (!isMobile) ...[
+                const Icon(Icons.help_sharp, color: Color(0xFF4C3E8A), size: 20),
+                const SizedBox(width: 12),
+              ],
               IconButton(
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
-                icon: const Icon(Icons.settings, color: Color(0xFF4C3E8A), size: 20),
+                icon: Icon(Icons.settings, color: const Color(0xFF4C3E8A), size: isMobile ? 18 : 20),
                 onPressed: () {
                   Navigator.pushReplacement(
                     context,
@@ -60,7 +66,7 @@ class AppTopNav extends StatelessWidget {
                   );
                 },
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: isMobile ? 10 : 16),
               GestureDetector(
                 onTap: () {
                   Navigator.pushReplacement(
@@ -72,24 +78,26 @@ class AppTopNav extends StatelessWidget {
                     ),
                   );
                 },
-                child: const CircleAvatar(
-                  radius: 16,
-                  backgroundColor: Color(0xFF1B3B4A),
-                  child: Icon(Icons.person, color: Colors.white, size: 20),
+                child: CircleAvatar(
+                  radius: isMobile ? 14 : 16,
+                  backgroundColor: const Color(0xFF1B3B4A),
+                  child: Icon(Icons.person, color: Colors.white, size: isMobile ? 18 : 20),
                 ),
               ),
-              const SizedBox(width: 16),
-              IconButton(
-                icon: const Icon(Icons.logout, size: 20, color: Colors.grey),
-                onPressed: () async {
-                  await Supabase.instance.client.auth.signOut();
-                  if (!context.mounted) return;
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (_) => const LoginScreen()),
-                  );
-                },
-              ),
+              if (!isMobile) ...[
+                const SizedBox(width: 12),
+                IconButton(
+                  icon: const Icon(Icons.logout, size: 20, color: Colors.grey),
+                  onPressed: () async {
+                    await Supabase.instance.client.auth.signOut();
+                    if (!context.mounted) return;
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (_) => const LoginScreen()),
+                    );
+                  },
+                ),
+              ],
             ],
           )
         ],
