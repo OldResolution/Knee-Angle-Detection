@@ -1,6 +1,9 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+
+const Object _unsetBleField = Object();
 
 enum BleConnectionPhase {
   disconnected,
@@ -15,6 +18,8 @@ class BleScanState {
     required this.results,
     required this.isScanning,
     required this.isSimulationMode,
+    required this.adapterState,
+    required this.canRequestEnable,
     this.errorMessage,
     this.infoMessage,
   });
@@ -24,12 +29,17 @@ class BleScanState {
       results: const [],
       isScanning: false,
       isSimulationMode: isSimulationMode,
+      adapterState: BluetoothAdapterState.unknown,
+      canRequestEnable:
+          !kIsWeb && defaultTargetPlatform == TargetPlatform.android,
     );
   }
 
   final List<ScanResult> results;
   final bool isScanning;
   final bool isSimulationMode;
+  final BluetoothAdapterState adapterState;
+  final bool canRequestEnable;
   final String? errorMessage;
   final String? infoMessage;
 
@@ -37,17 +47,27 @@ class BleScanState {
     List<ScanResult>? results,
     bool? isScanning,
     bool? isSimulationMode,
-    String? errorMessage,
-    String? infoMessage,
+    BluetoothAdapterState? adapterState,
+    bool? canRequestEnable,
+    Object? errorMessage = _unsetBleField,
+    Object? infoMessage = _unsetBleField,
   }) {
     return BleScanState(
       results: results ?? this.results,
       isScanning: isScanning ?? this.isScanning,
       isSimulationMode: isSimulationMode ?? this.isSimulationMode,
-      errorMessage: errorMessage ?? this.errorMessage,
-      infoMessage: infoMessage ?? this.infoMessage,
+      adapterState: adapterState ?? this.adapterState,
+      canRequestEnable: canRequestEnable ?? this.canRequestEnable,
+      errorMessage: identical(errorMessage, _unsetBleField)
+          ? this.errorMessage
+          : errorMessage as String?,
+      infoMessage: identical(infoMessage, _unsetBleField)
+          ? this.infoMessage
+          : infoMessage as String?,
     );
   }
+
+  bool get isBluetoothOff => adapterState == BluetoothAdapterState.off;
 
   String get summary {
     if (errorMessage != null && errorMessage!.isNotEmpty) {
@@ -98,22 +118,28 @@ class BleConnectionStateData {
   final String? infoMessage;
 
   BleConnectionStateData copyWith({
-    BluetoothDevice? device,
+    Object? device = _unsetBleField,
     BleConnectionPhase? phase,
     bool? isSimulationMode,
     int? reconnectAttempts,
-    String? errorMessage,
-    int? mtu,
-    String? infoMessage,
+    Object? errorMessage = _unsetBleField,
+    Object? mtu = _unsetBleField,
+    Object? infoMessage = _unsetBleField,
   }) {
     return BleConnectionStateData(
-      device: device ?? this.device,
+      device: identical(device, _unsetBleField)
+          ? this.device
+          : device as BluetoothDevice?,
       phase: phase ?? this.phase,
       isSimulationMode: isSimulationMode ?? this.isSimulationMode,
       reconnectAttempts: reconnectAttempts ?? this.reconnectAttempts,
-      errorMessage: errorMessage ?? this.errorMessage,
-      mtu: mtu ?? this.mtu,
-      infoMessage: infoMessage ?? this.infoMessage,
+      errorMessage: identical(errorMessage, _unsetBleField)
+          ? this.errorMessage
+          : errorMessage as String?,
+      mtu: identical(mtu, _unsetBleField) ? this.mtu : mtu as int?,
+      infoMessage: identical(infoMessage, _unsetBleField)
+          ? this.infoMessage
+          : infoMessage as String?,
     );
   }
 
@@ -130,7 +156,9 @@ class BleConnectionStateData {
 
     switch (phase) {
       case BleConnectionPhase.connected:
-        return mtu == null ? 'Connected to $deviceLabel' : 'Connected to $deviceLabel | MTU $mtu';
+        return mtu == null
+            ? 'Connected to $deviceLabel'
+            : 'Connected to $deviceLabel | MTU $mtu';
       case BleConnectionPhase.connecting:
         return 'Connecting to $deviceLabel';
       case BleConnectionPhase.reconnecting:
@@ -138,7 +166,10 @@ class BleConnectionStateData {
       case BleConnectionPhase.error:
         return errorMessage ?? 'Connection error';
       case BleConnectionPhase.disconnected:
-        return infoMessage ?? (device == null ? 'No device connected' : '$deviceLabel disconnected');
+        return infoMessage ??
+            (device == null
+                ? 'No device connected'
+                : '$deviceLabel disconnected');
     }
   }
 
@@ -171,7 +202,8 @@ class BleState {
   factory BleState.initial({required bool isSimulationMode}) {
     return BleState(
       scanState: BleScanState.initial(isSimulationMode: isSimulationMode),
-      connectionState: BleConnectionStateData.initial(isSimulationMode: isSimulationMode),
+      connectionState:
+          BleConnectionStateData.initial(isSimulationMode: isSimulationMode),
     );
   }
 
@@ -192,7 +224,8 @@ class BleState {
 typedef BleScanStateUpdater = void Function(BleScanState state);
 typedef BleConnectionStateUpdater = void Function(BleConnectionStateData state);
 typedef BleDeviceCallback = Future<void> Function(BluetoothDevice device);
-typedef BleSimulationModeCallback = Future<void> Function(bool isSimulationMode);
+typedef BleSimulationModeCallback = Future<void> Function(
+    bool isSimulationMode);
 
 class BleService {
   BleService({
@@ -206,7 +239,8 @@ class BleService {
         _onScanStateChanged = onScanStateChanged,
         _onConnectionStateChanged = onConnectionStateChanged {
     _scanState = BleScanState.initial(isSimulationMode: initialSimulationMode);
-    _connectionState = BleConnectionStateData.initial(isSimulationMode: initialSimulationMode);
+    _connectionState =
+        BleConnectionStateData.initial(isSimulationMode: initialSimulationMode);
     _attachGlobalListeners();
   }
 
@@ -262,19 +296,30 @@ class BleService {
       _onScanStateChanged(_scanState);
     });
 
-    _adapterStateSubscription = FlutterBluePlus.adapterState.listen((adapterState) {
+    _adapterStateSubscription =
+        FlutterBluePlus.adapterState.listen((adapterState) {
       if (_simulationMode) {
         return;
       }
 
+      _scanState = _scanState.copyWith(
+        adapterState: adapterState,
+        errorMessage: adapterState == BluetoothAdapterState.on
+            ? null
+            : _scanState.errorMessage,
+      );
+      _onScanStateChanged(_scanState);
+
       if (adapterState != BluetoothAdapterState.on) {
         _scanState = _scanState.copyWith(
           isScanning: false,
-          errorMessage: 'Bluetooth adapter is $adapterState. Turn on Bluetooth to scan.',
+          errorMessage:
+              'Bluetooth adapter is $adapterState. Turn on Bluetooth to scan.',
         );
         _onScanStateChanged(_scanState);
 
-        if (_connectionState.phase == BleConnectionPhase.connected || _connectionState.phase == BleConnectionPhase.connecting) {
+        if (_connectionState.phase == BleConnectionPhase.connected ||
+            _connectionState.phase == BleConnectionPhase.connecting) {
           _connectionState = _connectionState.copyWith(
             phase: BleConnectionPhase.error,
             errorMessage: 'Bluetooth adapter is $adapterState.',
@@ -309,10 +354,15 @@ class BleService {
     _streamingStartedForActiveDevice = false;
 
     _scanState = BleScanState.initial(isSimulationMode: enabled).copyWith(
-      infoMessage: enabled ? 'Simulation mode enabled. BLE scanning is paused.' : 'Simulation mode disabled. Start a scan to find devices.',
+      infoMessage: enabled
+          ? 'Simulation mode enabled. BLE scanning is paused.'
+          : 'Simulation mode disabled. Start a scan to find devices.',
     );
-    _connectionState = BleConnectionStateData.initial(isSimulationMode: enabled).copyWith(
-      infoMessage: enabled ? 'Simulation mode enabled. Real BLE connections are paused.' : 'Ready for BLE connection.',
+    _connectionState =
+        BleConnectionStateData.initial(isSimulationMode: enabled).copyWith(
+      infoMessage: enabled
+          ? 'Simulation mode enabled. Real BLE connections are paused.'
+          : 'Ready for BLE connection.',
     );
 
     _emitScanState(_scanState);
@@ -322,7 +372,8 @@ class BleService {
     }
   }
 
-  Future<void> startScan({Duration timeout = const Duration(seconds: 12)}) async {
+  Future<void> startScan(
+      {Duration timeout = const Duration(seconds: 12)}) async {
     if (_simulationMode) {
       _emitScanState(
         _scanState.copyWith(
@@ -337,7 +388,10 @@ class BleService {
     try {
       final adapterState = await FlutterBluePlus.adapterState.first;
       if (adapterState != BluetoothAdapterState.on) {
-        throw StateError('Bluetooth adapter is $adapterState. Turn on Bluetooth and retry.');
+        final enabled = await _ensureBluetoothReady(adapterState);
+        if (!enabled) {
+          return;
+        }
       }
 
       _emitScanState(
@@ -389,12 +443,22 @@ class BleService {
     }
   }
 
+  Future<void> requestBluetoothEnable() async {
+    if (_simulationMode) {
+      return;
+    }
+
+    final adapterState = await FlutterBluePlus.adapterState.first;
+    await _ensureBluetoothReady(adapterState, triggeredFromStartScan: false);
+  }
+
   Future<void> connectToDevice(BluetoothDevice device) async {
     if (_simulationMode) {
       _emitConnectionState(
         _connectionState.copyWith(
           phase: BleConnectionPhase.disconnected,
-          errorMessage: 'Simulation mode is enabled. Real BLE connections are skipped.',
+          errorMessage:
+              'Simulation mode is enabled. Real BLE connections are skipped.',
           infoMessage: 'Switch off simulation mode to connect to hardware.',
           device: null,
         ),
@@ -418,7 +482,8 @@ class BleService {
     );
 
     try {
-      await device.connect(timeout: const Duration(seconds: 15), autoConnect: false);
+      await device.connect(
+          timeout: const Duration(seconds: 15), autoConnect: false);
       await _requestMtu(device);
     } catch (error) {
       _emitConnectionState(
@@ -458,13 +523,15 @@ class BleService {
       await onDeviceDisconnected!(device);
     }
     _emitConnectionState(
-      BleConnectionStateData.initial(isSimulationMode: _simulationMode).copyWith(
+      BleConnectionStateData.initial(isSimulationMode: _simulationMode)
+          .copyWith(
         infoMessage: 'Disconnected.',
       ),
     );
   }
 
-  Future<void> _attemptReconnect(BluetoothDevice device, {required String reason}) async {
+  Future<void> _attemptReconnect(BluetoothDevice device,
+      {required String reason}) async {
     if (_manualDisconnectRequested || _simulationMode || _reconnectInProgress) {
       return;
     }
@@ -473,7 +540,8 @@ class BleService {
       _emitConnectionState(
         _connectionState.copyWith(
           phase: BleConnectionPhase.error,
-          errorMessage: 'Reconnect failed after $_maxReconnectAttempts attempts.',
+          errorMessage:
+              'Reconnect failed after $_maxReconnectAttempts attempts.',
           infoMessage: reason,
         ),
       );
@@ -493,7 +561,8 @@ class BleService {
       ),
     );
 
-    final delay = Duration(seconds: _reconnectBaseDelay.inSeconds * _reconnectAttempts);
+    final delay =
+        Duration(seconds: _reconnectBaseDelay.inSeconds * _reconnectAttempts);
     await Future<void>.delayed(delay);
 
     if (_manualDisconnectRequested || _simulationMode) {
@@ -503,7 +572,8 @@ class BleService {
 
     try {
       _attachDeviceListeners(device);
-      await device.connect(timeout: const Duration(seconds: 15), autoConnect: false);
+      await device.connect(
+          timeout: const Duration(seconds: 15), autoConnect: false);
       await _requestMtu(device);
       _reconnectAttempts = 0;
     } catch (error) {
@@ -526,39 +596,40 @@ class BleService {
   void _attachDeviceListeners(BluetoothDevice device) {
     _cancelDeviceSubscriptions();
 
-    _deviceConnectionSubscription = device.connectionState.listen((connectionState) {
+    _deviceConnectionSubscription =
+        device.connectionState.listen((connectionState) {
       if (_simulationMode) {
         return;
       }
 
       if (connectionState == BluetoothConnectionState.connected) {
-          _reconnectInProgress = false;
-          _reconnectAttempts = 0;
-          _manualDisconnectRequested = false;
-          _emitConnectionState(
-            _connectionState.copyWith(
-              device: device,
-              phase: BleConnectionPhase.connected,
-              errorMessage: null,
-              infoMessage: 'Connected to ${_deviceName(device)}',
-            ),
-          );
-          unawaited(_ensureStreamingStarted(device));
+        _reconnectInProgress = false;
+        _reconnectAttempts = 0;
+        _manualDisconnectRequested = false;
+        _emitConnectionState(
+          _connectionState.copyWith(
+            device: device,
+            phase: BleConnectionPhase.connected,
+            errorMessage: null,
+            infoMessage: 'Connected to ${_deviceName(device)}',
+          ),
+        );
+        unawaited(_ensureStreamingStarted(device));
       } else if (connectionState == BluetoothConnectionState.disconnected) {
-          _emitConnectionState(
-            _connectionState.copyWith(
-              device: device,
-              phase: BleConnectionPhase.disconnected,
-              infoMessage: 'Disconnected from ${_deviceName(device)}',
-            ),
-          );
-          _streamingStartedForActiveDevice = false;
-          if (onDeviceDisconnected != null) {
-            unawaited(onDeviceDisconnected!(device));
-          }
-          if (!_manualDisconnectRequested) {
-            unawaited(_attemptReconnect(device, reason: 'unexpected disconnect'));
-          }
+        _emitConnectionState(
+          _connectionState.copyWith(
+            device: device,
+            phase: BleConnectionPhase.disconnected,
+            infoMessage: 'Disconnected from ${_deviceName(device)}',
+          ),
+        );
+        _streamingStartedForActiveDevice = false;
+        if (onDeviceDisconnected != null) {
+          unawaited(onDeviceDisconnected!(device));
+        }
+        if (!_manualDisconnectRequested) {
+          unawaited(_attemptReconnect(device, reason: 'unexpected disconnect'));
+        }
       } else {
         _emitConnectionState(
           _connectionState.copyWith(
@@ -594,6 +665,66 @@ class BleService {
     } catch (_) {
       // Requesting MTU can fail on some platforms; connection can still proceed.
     }
+  }
+
+  Future<bool> _ensureBluetoothReady(
+    BluetoothAdapterState adapterState, {
+    bool triggeredFromStartScan = true,
+  }) async {
+    if (adapterState == BluetoothAdapterState.on) {
+      return true;
+    }
+
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      _emitScanState(
+        _scanState.copyWith(
+          errorMessage: null,
+          infoMessage: triggeredFromStartScan
+              ? 'Bluetooth is off. Asking Android to turn it on...'
+              : 'Requesting Bluetooth to turn on...',
+        ),
+      );
+      try {
+        await FlutterBluePlus.turnOn();
+        final readyState = await FlutterBluePlus.adapterState
+            .firstWhere(
+          (state) => state == BluetoothAdapterState.on,
+          orElse: () => adapterState,
+        )
+            .timeout(const Duration(seconds: 20), onTimeout: () {
+          return adapterState;
+        });
+
+        if (readyState == BluetoothAdapterState.on) {
+          _emitScanState(
+            _scanState.copyWith(
+              adapterState: readyState,
+              errorMessage: null,
+              infoMessage: 'Bluetooth enabled. Ready to scan.',
+            ),
+          );
+          return true;
+        }
+      } catch (error) {
+        _emitScanState(
+          _scanState.copyWith(
+            isScanning: false,
+            errorMessage:
+                'Bluetooth needs to be turned on before scanning: $error',
+          ),
+        );
+        return false;
+      }
+    }
+
+    _emitScanState(
+      _scanState.copyWith(
+        isScanning: false,
+        errorMessage:
+            'Bluetooth adapter is $adapterState. Please enable Bluetooth and try again.',
+      ),
+    );
+    return false;
   }
 
   Future<void> _ensureStreamingStarted(BluetoothDevice device) async {

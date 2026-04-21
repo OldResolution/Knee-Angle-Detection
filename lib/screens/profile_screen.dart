@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../services/profile_service.dart';
 import '../widgets/app_drawer.dart';
 import '../widgets/app_bottom_nav.dart';
 import '../widgets/app_top_nav.dart';
@@ -22,31 +23,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<Map<String, dynamic>?> _fetchProfile() async {
-    final user = Supabase.instance.client.auth.currentUser;
-    if (user == null) return null;
-
-    final metadata = Map<String, dynamic>.from(user.userMetadata ?? const {});
-    final fallback = <String, dynamic>{
-      'name': metadata['name'],
-      'email': user.email,
-      'mobile': metadata['mobile'],
-      'age': metadata['age'],
-      'gender': metadata['gender'],
-    };
-
-    try {
-      final data = await Supabase.instance.client
-          .from('profiles')
-          .select()
-          .eq('id', user.id)
-          .single();
-      return {
-        ...fallback,
-        ...Map<String, dynamic>.from(data),
-      };
-    } catch (e) {
-      return fallback;
-    }
+    await ProfileService.ensureCurrentUserProfile();
+    return ProfileService.fetchCurrentUserProfile();
   }
 
   @override

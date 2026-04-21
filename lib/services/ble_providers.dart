@@ -10,8 +10,10 @@ import 'ble_data_service.dart';
 import 'ble_service.dart';
 import 'knee_analysis_service.dart';
 
-final bleControllerProvider = StateNotifierProvider<BleController, BleState>((ref) {
-  return BleController(initialSimulationMode: PreferencesService.isSimulationMode);
+final bleControllerProvider =
+    StateNotifierProvider<BleController, BleState>((ref) {
+  return BleController(
+      initialSimulationMode: PreferencesService.isSimulationMode);
 });
 
 final bleScanStateProvider = Provider<BleScanState>((ref) {
@@ -19,7 +21,8 @@ final bleScanStateProvider = Provider<BleScanState>((ref) {
 });
 
 final bleConnectionStateProvider = Provider<BleConnectionStateData>((ref) {
-  return ref.watch(bleControllerProvider.select((state) => state.connectionState));
+  return ref
+      .watch(bleControllerProvider.select((state) => state.connectionState));
 });
 
 final bleDataStreamProvider = StreamProvider<KneeDataPoint>((ref) {
@@ -30,9 +33,13 @@ final currentKneeDataProvider = Provider<KneeDataPoint?>((ref) {
   return ref.watch(bleDataStreamProvider).valueOrNull;
 });
 
-final kneeDataHistoryProvider = StateNotifierProvider<KneeDataHistoryNotifier, List<KneeDataPoint>>((ref) {
+final kneeDataHistoryProvider =
+    StateNotifierProvider<KneeDataHistoryNotifier, List<KneeDataPoint>>((ref) {
   final notifier = KneeDataHistoryNotifier();
-  final subscription = ref.watch(bleControllerProvider.notifier).dataStream.listen(notifier.addPoint);
+  final subscription = ref
+      .watch(bleControllerProvider.notifier)
+      .dataStream
+      .listen(notifier.addPoint);
   ref.onDispose(subscription.cancel);
   return notifier;
 });
@@ -48,7 +55,8 @@ final isLiveDataActiveProvider = Provider<bool>((ref) {
     return true;
   }
 
-  return connection.phase == BleConnectionPhase.connected || connection.phase == BleConnectionPhase.reconnecting;
+  return connection.phase == BleConnectionPhase.connected ||
+      connection.phase == BleConnectionPhase.reconnecting;
 });
 
 // ── Analysis Engine Providers ──────────────────────────────────────────
@@ -146,7 +154,6 @@ class AlertHistoryNotifier extends StateNotifier<List<KneeAlert>> {
   }
 }
 
-
 class BleController extends StateNotifier<BleState> {
   BleController({required bool initialSimulationMode})
       : super(BleState.initial(isSimulationMode: initialSimulationMode)) {
@@ -164,7 +171,8 @@ class BleController extends StateNotifier<BleState> {
       },
       onDeviceConnected: (device) => _dataService.startStreaming(device),
       onDeviceDisconnected: (_) => _dataService.stopStreaming(),
-      onSimulationModeChanged: (isSimulationMode) => _dataService.setSimulationMode(isSimulationMode),
+      onSimulationModeChanged: (isSimulationMode) =>
+          _dataService.setSimulationMode(isSimulationMode),
     );
 
     if (initialSimulationMode) {
@@ -177,18 +185,23 @@ class BleController extends StateNotifier<BleState> {
 
   Stream<KneeDataPoint> get dataStream => _dataService.stream;
   SimulationPattern get simulationPattern => _dataService.simulationPattern;
-  double get simulationSpeedMultiplier => _dataService.simulationSpeedMultiplier;
+  double get simulationSpeedMultiplier =>
+      _dataService.simulationSpeedMultiplier;
   double get simulationDataRateHz => _dataService.simulationDataRateHz;
 
   Future<void> startScan() => _service.startScan();
 
+  Future<void> requestBluetoothEnable() => _service.requestBluetoothEnable();
+
   Future<void> stopScan() => _service.stopScan();
 
-  Future<void> connectToDevice(BluetoothDevice device) => _service.connectToDevice(device);
+  Future<void> connectToDevice(BluetoothDevice device) =>
+      _service.connectToDevice(device);
 
   Future<void> disconnect() => _service.disconnect();
 
-  Future<void> setSimulationMode(bool enabled) => _service.setSimulationMode(enabled);
+  Future<void> setSimulationMode(bool enabled) =>
+      _service.setSimulationMode(enabled);
 
   Future<void> setSimulationPattern(SimulationPattern pattern) async {
     await PreferencesService.setSimulationPattern(pattern.key);
