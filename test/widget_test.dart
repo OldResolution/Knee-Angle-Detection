@@ -6,6 +6,6 @@ void main() {
     await tester.pumpWidget(const GopalApp());
 
     expect(find.text('Welcome Back'), findsOneWidget);
-    expect(find.text('Login'), findsWidgets);
+    expect(find.text('Sign In'), findsOneWidget);
   });
 }

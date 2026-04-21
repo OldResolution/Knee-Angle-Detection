@@ -1,98 +1,87 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import '../screens/login_screen.dart';
-import '../screens/profile_screen.dart';
-import '../screens/settings_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class AppTopNav extends StatelessWidget {
+import '../services/ble_providers.dart';
+import '../services/preferences_service.dart';
+import '../services/simulation_analytics_providers.dart';
+import 'responsive/responsive_layout.dart';
+
+class AppTopNav extends ConsumerWidget {
   const AppTopNav({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isMobile = ResponsiveLayout.isMobile(context);
+    final horizontalPadding = ResponsiveLayout.horizontalPadding(context);
+    final isSimulationMode = ref.watch(simulationModeProvider);
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      color: Colors.white,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Row(
-              children: [
-                Builder(
-                  builder: (context) => IconButton(
-                    icon: const Icon(Icons.menu, color: Color(0xFF4C3E8A)),
-                    onPressed: () {
-                      Scaffold.of(context).openDrawer();
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-                const Expanded(
-                  child: Text(
-                    'The Kinetic Sanctuary',
-                    style: TextStyle(
-                      color: Color(0xFF4C3E8A),
-                      fontWeight: FontWeight.w700,
-                      fontSize: 18,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Row(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(bottom: BorderSide(color: Color(0xFFE2E2E6))),
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+              horizontal: horizontalPadding, vertical: isMobile ? 10 : 16),
+          child: Row(
             children: [
-              const Icon(Icons.help_sharp, color: Color(0xFF4C3E8A), size: 20),
-              const SizedBox(width: 16),
-              IconButton(
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                icon: const Icon(Icons.settings, color: Color(0xFF4C3E8A), size: 20),
-                onPressed: () {
-                  Navigator.pushReplacement(
-                    context,
-                    PageRouteBuilder(
-                      pageBuilder: (context, animation, secondaryAnimation) => const SettingsScreen(),
-                      transitionDuration: Duration.zero,
-                      reverseTransitionDuration: Duration.zero,
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(width: 16),
-              GestureDetector(
-                onTap: () {
-                  Navigator.pushReplacement(
-                    context,
-                    PageRouteBuilder(
-                      pageBuilder: (context, animation, secondaryAnimation) => const ProfileScreen(),
-                      transitionDuration: Duration.zero,
-                      reverseTransitionDuration: Duration.zero,
-                    ),
-                  );
-                },
-                child: const CircleAvatar(
-                  radius: 16,
-                  backgroundColor: Color(0xFF1B3B4A),
-                  child: Icon(Icons.person, color: Colors.white, size: 20),
+              Builder(
+                builder: (context) => IconButton(
+                  icon: Icon(Icons.menu,
+                      color: const Color(0xFF4C3E8A), size: isMobile ? 20 : 24),
+                  onPressed: () {
+                    Scaffold.of(context).openDrawer();
+                  },
                 ),
               ),
-              const SizedBox(width: 16),
-              IconButton(
-                icon: const Icon(Icons.logout, size: 20, color: Colors.grey),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'The Kinetic Sanctuary',
+                  style: TextStyle(
+                    color: const Color(0xFF4C3E8A),
+                    fontWeight: FontWeight.w700,
+                    fontSize: isMobile ? 15 : 18,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 8),
+              FilledButton.tonalIcon(
                 onPressed: () async {
-                  await Supabase.instance.client.auth.signOut();
-                  if (!context.mounted) return;
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (_) => const LoginScreen()),
-                  );
+                  final nextValue = !isSimulationMode;
+                  await PreferencesService.setSimulationMode(nextValue);
+                  await ref
+                      .read(bleControllerProvider.notifier)
+                      .setSimulationMode(nextValue);
                 },
+                icon: Icon(
+                  isSimulationMode
+                      ? Icons.toggle_on
+                      : Icons.toggle_off_outlined,
+                  size: isMobile ? 18 : 20,
+                ),
+                label: Text(isSimulationMode ? 'Simulation' : 'Live'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: isSimulationMode
+                      ? const Color(0xFFEDE9F5)
+                      : const Color(0xFFE8F1F3),
+                  foregroundColor: const Color(0xFF4C3E8A),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isMobile ? 10 : 14,
+                    vertical: isMobile ? 8 : 10,
+                  ),
+                  textStyle: TextStyle(
+                    fontSize: isMobile ? 12 : 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
             ],
-          )
-        ],
+          ),
+        ),
       ),
     );
   }
