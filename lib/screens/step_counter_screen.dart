@@ -3,6 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../services/goals_providers.dart';
+import '../services/simulation_analytics_providers.dart';
 import '../widgets/app_drawer.dart';
 import '../widgets/app_bottom_nav.dart';
 import '../widgets/app_top_nav.dart';
@@ -18,6 +19,7 @@ class StepCounterScreen extends ConsumerWidget {
     final stepProgress = ref.watch(stepGoalProgressProvider);
     final activeMinutes = ref.watch(todayActiveMinutesProvider);
     final calories = steps * 0.04;
+    final hourlyBars = ref.watch(hourlyActivityBarsProvider);
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -35,14 +37,13 @@ class StepCounterScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final headerCopy = Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Good Morning, Alex',
+                            'Today\'s Step Summary',
                             style: Theme.of(context).textTheme.displayMedium,
                           ),
                           const SizedBox(height: 8),
@@ -51,18 +52,42 @@ class StepCounterScreen extends ConsumerWidget {
                             style: Theme.of(context).textTheme.bodyLarge,
                           ),
                         ],
-                      ),
-                      const CircleAvatar(
+                      );
+
+                      final avatar = const CircleAvatar(
                         radius: 20,
                         backgroundColor: Color(0xFFE2E2E6),
                         child: Icon(Icons.person, color: Colors.black87),
-                      ),
-                    ],
+                      );
+
+                      if (constraints.maxWidth <=
+                          ResponsiveLayout.mobileMaxWidth) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            headerCopy,
+                            const SizedBox(height: 16),
+                            avatar,
+                          ],
+                        );
+                      }
+
+                      return Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(child: headerCopy),
+                          const SizedBox(width: 16),
+                          avatar,
+                        ],
+                      );
+                    },
                   ),
                   const SizedBox(height: 32),
                   LayoutBuilder(
                     builder: (context, constraints) {
-                      if (constraints.maxWidth > ResponsiveLayout.tabletMaxWidth) {
+                      if (constraints.maxWidth >
+                          ResponsiveLayout.tabletMaxWidth) {
                         return Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -110,7 +135,7 @@ class StepCounterScreen extends ConsumerWidget {
                     },
                   ),
                   const SizedBox(height: 24),
-                  _buildHourlyActivityCard(context),
+                  _buildHourlyActivityCard(context, hourlyBars: hourlyBars),
                 ],
               ),
             ),
@@ -148,11 +173,20 @@ class StepCounterScreen extends ConsumerWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('${(progress * 100).round()}% of Goal', style: const TextStyle(fontSize: 14, color: Colors.black54)),
+                        Text('${(progress * 100).round()}% of Goal',
+                            style: const TextStyle(
+                                fontSize: 14, color: Colors.black54)),
                         const SizedBox(height: 4),
-                        Text(_formatInt(steps), style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold, color: Colors.black87, height: 1.1)),
+                        Text(_formatInt(steps),
+                            style: const TextStyle(
+                                fontSize: 48,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                                height: 1.1)),
                         const SizedBox(height: 4),
-                        Text('${_formatInt(goal)} steps', style: const TextStyle(fontSize: 14, color: Colors.black54)),
+                        Text('${_formatInt(goal)} steps',
+                            style: const TextStyle(
+                                fontSize: 14, color: Colors.black54)),
                       ],
                     ),
                   ),
@@ -166,7 +200,11 @@ class StepCounterScreen extends ConsumerWidget {
                 color: const Color(0xFFF2F2F6),
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: Text('${calories.toStringAsFixed(0)} kcal burned', style: const TextStyle(fontSize: 13, color: Colors.black87, fontWeight: FontWeight.w500)),
+              child: Text('${calories.toStringAsFixed(0)} kcal burned',
+                  style: const TextStyle(
+                      fontSize: 13,
+                      color: Colors.black87,
+                      fontWeight: FontWeight.w500)),
             ),
           ],
         ),
@@ -190,13 +228,18 @@ class StepCounterScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Active Wear', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const Text('Active Wear',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             Row(
               crossAxisAlignment: CrossAxisAlignment.baseline,
               textBaseline: TextBaseline.alphabetic,
               children: [
-                Text('${activeHoursPart}h ${activeMinutesPart}m', style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.black87)),
+                Text('${activeHoursPart}h ${activeMinutesPart}m',
+                    style: const TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87)),
               ],
             ),
             const SizedBox(height: 16),
@@ -228,8 +271,14 @@ class StepCounterScreen extends ConsumerWidget {
     return value < 0 ? '-${buffer.toString()}' : buffer.toString();
   }
 
-  Widget _buildHourlyActivityCard(BuildContext context) {
+  Widget _buildHourlyActivityCard(
+    BuildContext context, {
+    required List<double> hourlyBars,
+  }) {
     final isMobile = ResponsiveLayout.isMobile(context);
+    final maxBar = hourlyBars.isEmpty
+        ? 100.0
+        : hourlyBars.reduce((a, b) => a > b ? a : b).clamp(40, 120).toDouble();
 
     return Container(
       decoration: BoxDecoration(
@@ -247,37 +296,52 @@ class StepCounterScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Hourly Activity', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87)),
+                    Text('Hourly Activity',
+                        style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87)),
                     SizedBox(height: 8),
-                    Text('Step distribution throughout the day', style: TextStyle(color: Colors.black54), overflow: TextOverflow.visible),
+                    Text('Step distribution throughout the day',
+                        style: TextStyle(color: Colors.black54),
+                        overflow: TextOverflow.visible),
                   ],
                 ),
               ),
               if (!isMobile)
                 Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF5F4F7),
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(24),
-                        boxShadow: [
-                          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2)),
-                        ],
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F4F7),
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 24, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.05),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2)),
+                          ],
+                        ),
+                        child: const Text('Today',
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF4C3E8A))),
                       ),
-                      child: const Text('Today', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF4C3E8A))),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                      child: const Text('Week', style: TextStyle(color: Colors.black54)),
-                    ),
-                  ],
-                ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 24, vertical: 8),
+                        child: const Text('Week',
+                            style: TextStyle(color: Colors.black54)),
+                      ),
+                    ],
+                  ),
                 )
             ],
           ),
@@ -287,7 +351,7 @@ class StepCounterScreen extends ConsumerWidget {
             child: BarChart(
               BarChartData(
                 alignment: BarChartAlignment.spaceAround,
-                maxY: 100,
+                maxY: maxBar,
                 barTouchData: const BarTouchData(enabled: false),
                 titlesData: FlTitlesData(
                   show: true,
@@ -295,40 +359,51 @@ class StepCounterScreen extends ConsumerWidget {
                     sideTitles: SideTitles(
                       showTitles: true,
                       getTitlesWidget: (double value, TitleMeta meta) {
-                        const style = TextStyle(color: Colors.black54, fontSize: 12);
+                        const style =
+                            TextStyle(color: Colors.black54, fontSize: 12);
                         Widget text;
                         switch (value.toInt()) {
-                          case 0: text = const Text('8 AM', style: style); break;
-                          case 2: text = const Text('10 AM', style: style); break;
-                          case 4: text = const Text('12 PM', style: style); break;
-                          case 6: text = const Text('2 PM', style: style); break;
-                          case 8: text = const Text('4 PM', style: style); break;
-                          case 10: text = const Text('6 PM', style: style); break;
-                          default: text = const Text('', style: style); break;
+                          case 0:
+                            text = const Text('8 AM', style: style);
+                            break;
+                          case 2:
+                            text = const Text('10 AM', style: style);
+                            break;
+                          case 4:
+                            text = const Text('12 PM', style: style);
+                            break;
+                          case 6:
+                            text = const Text('2 PM', style: style);
+                            break;
+                          case 8:
+                            text = const Text('4 PM', style: style);
+                            break;
+                          case 10:
+                            text = const Text('6 PM', style: style);
+                            break;
+                          default:
+                            text = const Text('', style: style);
+                            break;
                         }
                         return text;
                       },
                     ),
                   ),
-                  leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  leftTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false)),
+                  topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false)),
+                  rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false)),
                 ),
                 gridData: const FlGridData(show: false),
                 borderData: FlBorderData(show: false),
-                barGroups: [
-                  _makeGroupData(0, 10, isLight: true),
-                  _makeGroupData(1, 20, isLight: true),
-                  _makeGroupData(2, 60, isDark: true),
-                  _makeGroupData(3, 30, isLight: true),
-                  _makeGroupData(4, 15, isLight: true),
-                  _makeGroupData(5, 45, isLight: true),
-                  _makeGroupData(6, 90, isDark: true),
-                  _makeGroupData(7, 40, isLight: true),
-                  _makeGroupData(8, 25, isLight: true),
-                  _makeGroupData(9, 5, isLight: true),
-                  _makeGroupData(10, 5, isLight: true),
-                ],
+                barGroups: List.generate(hourlyBars.length, (index) {
+                  final peakValue = hourlyBars.reduce((a, b) => a > b ? a : b);
+                  final isDark = hourlyBars[index] == peakValue;
+                  return _makeGroupData(index, hourlyBars[index],
+                      isDark: isDark, isLight: !isDark);
+                }),
               ),
             ),
           ),
@@ -337,8 +412,11 @@ class StepCounterScreen extends ConsumerWidget {
     );
   }
 
-  BarChartGroupData _makeGroupData(int x, double y, {bool isDark = false, bool isLight = false}) {
-    Color barColor = isDark ? const Color(0xFF4C3E8A) : (isLight ? const Color(0xFFE2DCEC) : const Color(0xFFC4B8E1));
+  BarChartGroupData _makeGroupData(int x, double y,
+      {bool isDark = false, bool isLight = false}) {
+    Color barColor = isDark
+        ? const Color(0xFF4C3E8A)
+        : (isLight ? const Color(0xFFE2DCEC) : const Color(0xFFC4B8E1));
     return BarChartGroupData(
       x: x,
       barRods: [

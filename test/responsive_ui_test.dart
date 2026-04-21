@@ -1,10 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:gopal_app/screens/step_counter_screen.dart';
+import 'package:gopal_app/services/preferences_service.dart';
+import 'package:gopal_app/widgets/app_bottom_nav.dart';
 import 'package:gopal_app/widgets/responsive/responsive_layout.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  testWidgets('ResponsiveLayout returns mobile scale values', (WidgetTester tester) async {
+  setUpAll(() async {
+    SharedPreferences.setMockInitialValues({});
+    await PreferencesService.init();
+  });
+
+  testWidgets('ResponsiveLayout returns mobile scale values',
+      (WidgetTester tester) async {
     late bool isMobile;
     late double horizontalPadding;
     late double headlineSize;
@@ -26,11 +34,12 @@ void main() {
     );
 
     expect(isMobile, isTrue);
-    expect(horizontalPadding, 16);
-    expect(headlineSize, 24);
+    expect(horizontalPadding, 12);
+    expect(headlineSize, 22);
   });
 
-  testWidgets('ResponsiveLayout returns tablet scale values', (WidgetTester tester) async {
+  testWidgets('ResponsiveLayout returns tablet scale values',
+      (WidgetTester tester) async {
     late bool isTablet;
     late double horizontalPadding;
     late double headlineSize;
@@ -56,7 +65,8 @@ void main() {
     expect(headlineSize, 28);
   });
 
-  testWidgets('StepCounter shows bottom navigation on mobile width', (WidgetTester tester) async {
+  testWidgets('AppBottomNav renders dashboard destination on mobile width',
+      (WidgetTester tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(() {
@@ -65,10 +75,16 @@ void main() {
     });
 
     await tester.pumpWidget(
-      const MaterialApp(home: StepCounterScreen()),
+      const MaterialApp(
+        home: Scaffold(
+          bottomNavigationBar: AppBottomNav(currentIndex: 0),
+        ),
+      ),
     );
 
     expect(find.byType(NavigationBar), findsOneWidget);
-    expect(find.text('Steps'), findsOneWidget);
+    expect(find.text('Dashboard'), findsOneWidget);
+    expect(find.text('Settings'), findsOneWidget);
+    expect(find.text('Profile'), findsOneWidget);
   });
 }

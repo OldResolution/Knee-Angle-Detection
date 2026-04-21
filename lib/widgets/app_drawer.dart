@@ -31,15 +31,28 @@ class _AppDrawerState extends State<AppDrawer> {
   Future<Map<String, dynamic>?> _fetchProfile() async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return null;
+
+    final metadata = Map<String, dynamic>.from(user.userMetadata ?? const {});
+    final fallback = <String, dynamic>{
+      'name': metadata['name'] ?? user.email ?? 'User',
+      'email': user.email,
+      'mobile': metadata['mobile'],
+      'age': metadata['age'],
+      'gender': metadata['gender'],
+    };
+
     try {
       final data = await Supabase.instance.client
           .from('profiles')
           .select()
           .eq('id', user.id)
           .single();
-      return data;
+      return {
+        ...fallback,
+        ...Map<String, dynamic>.from(data),
+      };
     } catch (e) {
-      return null;
+      return fallback;
     }
   }
 
@@ -60,7 +73,8 @@ class _AppDrawerState extends State<AppDrawer> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 32.0),
+              padding: EdgeInsets.symmetric(
+                  horizontal: horizontalPadding, vertical: 32.0),
               child: Row(
                 children: [
                   Container(
@@ -70,7 +84,8 @@ class _AppDrawerState extends State<AppDrawer> {
                       color: Colors.transparent,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.accessibility_new_outlined, color: AppTheme.primary, size: 32),
+                    child: const Icon(Icons.accessibility_new_outlined,
+                        color: AppTheme.primary, size: 32),
                   ),
                   const SizedBox(width: 16),
                   const Expanded(
@@ -160,26 +175,33 @@ class _AppDrawerState extends State<AppDrawer> {
                         const CircleAvatar(
                           radius: 16,
                           backgroundColor: Color(0xFFE2E2E6),
-                          child: Icon(Icons.person, color: Color(0xFF332A7C), size: 18),
+                          child: Icon(Icons.person,
+                              color: Color(0xFF332A7C), size: 18),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: FutureBuilder<Map<String, dynamic>?>(
                             future: _profileFuture,
                             builder: (context, snapshot) {
-                              final name = snapshot.data?['name'] as String? ?? 'Loading...';
+                              final name = snapshot.data?['name'] as String? ??
+                                  'Loading...';
                               return Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     name,
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.textPrimary),
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                        color: AppTheme.textPrimary),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   const Text(
                                     'Attending Specialist',
-                                    style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
+                                    style: TextStyle(
+                                        color: AppTheme.textSecondary,
+                                        fontSize: 12),
                                   ),
                                 ],
                               );
@@ -197,7 +219,8 @@ class _AppDrawerState extends State<AppDrawer> {
                           if (!context.mounted) return;
                           Navigator.pushReplacement(
                             context,
-                            MaterialPageRoute(builder: (_) => const LoginScreen()),
+                            MaterialPageRoute(
+                                builder: (_) => const LoginScreen()),
                           );
                         },
                         icon: const Icon(Icons.logout, size: 18),
@@ -242,13 +265,15 @@ class _AppDrawerState extends State<AppDrawer> {
               fontSize: 16,
             ),
           ),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           onTap: () {
             if (!isSelected && targetScreen != null) {
               Navigator.pushReplacement(
                 context,
                 PageRouteBuilder(
-                  pageBuilder: (context, animation, secondaryAnimation) => targetScreen,
+                  pageBuilder: (context, animation, secondaryAnimation) =>
+                      targetScreen,
                   transitionDuration: Duration.zero,
                   reverseTransitionDuration: Duration.zero,
                 ),
@@ -262,4 +287,3 @@ class _AppDrawerState extends State<AppDrawer> {
     );
   }
 }
-

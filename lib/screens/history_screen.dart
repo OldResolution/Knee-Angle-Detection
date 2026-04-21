@@ -6,6 +6,7 @@ import '../models/daily_log.dart';
 import '../models/knee_data_point.dart';
 import '../models/session_record.dart';
 import '../services/session_providers.dart';
+import '../services/simulation_analytics_providers.dart';
 import '../widgets/app_drawer.dart';
 import '../widgets/app_bottom_nav.dart';
 import '../widgets/app_top_nav.dart';
@@ -27,6 +28,24 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     final todayLogAsync = ref.watch(dailyLogProvider(DateTime.now()));
     final trend7Async = ref.watch(trendDataProvider(7));
     final trend30Async = ref.watch(trendDataProvider(30));
+    final isSimulationMode = ref.watch(simulationModeProvider);
+    final simulatedTrend7 = ref.watch(simulatedTrendLogsProvider(7));
+    final simulatedTrend30 = ref.watch(simulatedTrendLogsProvider(30));
+    final simulatedSessions = ref.watch(simulatedSessionsProvider);
+
+    final realTodayLog = todayLogAsync.valueOrNull;
+    final resolvedTodayLog = _hasMeaningfulDailyLog(realTodayLog)
+        ? realTodayLog
+        : (isSimulationMode ? simulatedTrend7.last : null);
+    final trend7Logs = _hasMeaningfulTrend(trend7Async.valueOrNull)
+        ? trend7Async.valueOrNull!
+        : (isSimulationMode ? simulatedTrend7 : const <DailyLog>[]);
+    final trend30Logs = _hasMeaningfulTrend(trend30Async.valueOrNull)
+        ? trend30Async.valueOrNull!
+        : (isSimulationMode ? simulatedTrend30 : const <DailyLog>[]);
+    final sessionItems = (sessionsAsync.valueOrNull?.isNotEmpty ?? false)
+        ? sessionsAsync.valueOrNull!
+        : (isSimulationMode ? simulatedSessions : const <SessionRecord>[]);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9FA),
@@ -48,39 +67,36 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                   const SizedBox(height: 24),
                   _buildDateFilter(context),
                   const SizedBox(height: 24),
-                  todayLogAsync.when(
-                    data: _buildDailySummary,
-                    loading: () => const LinearProgressIndicator(),
-                    error: (_, __) => const SizedBox.shrink(),
-                  ),
-                  const SizedBox(height: 24),
-                  trend7Async.when(
-                    data: (logs) => _buildTrendChart(
-                      title: '7-Day Trend',
-                      subtitle: 'Average angle and daily steps',
-                      logs: logs,
-                      showGoalMarkers: false,
+                  if (resolvedTodayLog != null)
+                    _buildDailySummary(resolvedTodayLog)
+                  else
+                    todayLogAsync.when(
+                      data: _buildDailySummary,
+                      loading: () => const LinearProgressIndicator(),
+                      error: (_, __) => const SizedBox.shrink(),
                     ),
-                    loading: () => const LinearProgressIndicator(),
-                    error: (_, __) => const SizedBox.shrink(),
+                  const SizedBox(height: 24),
+                  _buildTrendChart(
+                    title: '7-Day Trend',
+                    subtitle: isSimulationMode &&
+                            !_hasMeaningfulTrend(trend7Async.valueOrNull)
+                        ? 'Average angle and daily steps from the active simulation pattern'
+                        : 'Average angle and daily steps',
+                    logs: trend7Logs,
+                    showGoalMarkers: false,
                   ),
                   const SizedBox(height: 24),
-                  trend30Async.when(
-                    data: (logs) => _buildTrendChart(
-                      title: '30-Day Trend',
-                      subtitle: 'Monthly flexion trajectory with goal markers',
-                      logs: logs,
-                      showGoalMarkers: true,
-                    ),
-                    loading: () => const LinearProgressIndicator(),
-                    error: (_, __) => const SizedBox.shrink(),
+                  _buildTrendChart(
+                    title: '30-Day Trend',
+                    subtitle: isSimulationMode &&
+                            !_hasMeaningfulTrend(trend30Async.valueOrNull)
+                        ? 'Monthly flexion trajectory projected from simulation mode'
+                        : 'Monthly flexion trajectory with goal markers',
+                    logs: trend30Logs,
+                    showGoalMarkers: true,
                   ),
                   const SizedBox(height: 24),
-                  sessionsAsync.when(
-                    data: _buildSessionList,
-                    loading: () => const LinearProgressIndicator(),
-                    error: (err, _) => Text('Failed to load sessions: $err'),
-                  ),
+                  _buildSessionList(sessionItems),
                 ],
               ),
             ),
@@ -119,7 +135,8 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Text('Date Range', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+        const Text('Date Range',
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
         OutlinedButton.icon(
           onPressed: () async {
             final now = DateTime.now();
@@ -170,9 +187,14 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 12, color: Colors.black54)),
+          Text(label,
+              style: const TextStyle(fontSize: 12, color: Colors.black54)),
           const SizedBox(height: 6),
-          Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF4C3E8A))),
+          Text(value,
+              style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF4C3E8A))),
         ],
       ),
     );
@@ -191,7 +213,10 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     for (var i = 0; i < logs.length; i++) {
       angleSpots.add(FlSpot(i.toDouble(), logs[i].avgKneeAngle));
       stepSpots.add(FlSpot(i.toDouble(), logs[i].totalSteps.toDouble() / 100));
-      if (showGoalMarkers && (logs[i].goalStepsMet || logs[i].goalExerciseMet || logs[i].goalActiveHoursMet)) {
+      if (showGoalMarkers &&
+          (logs[i].goalStepsMet ||
+              logs[i].goalExerciseMet ||
+              logs[i].goalActiveHoursMet)) {
         markers.add(FlSpot(i.toDouble(), logs[i].avgKneeAngle));
       }
     }
@@ -205,7 +230,9 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          Text(title,
+              style:
+                  const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 6),
           Text(subtitle, style: const TextStyle(color: Colors.black54)),
           const SizedBox(height: 20),
@@ -220,8 +247,10 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                 gridData: const FlGridData(show: true),
                 borderData: FlBorderData(show: false),
                 titlesData: FlTitlesData(
-                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false)),
+                  rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false)),
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
@@ -232,7 +261,8 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                           return const SizedBox.shrink();
                         }
                         final date = logs[index].date;
-                        return Text('${date.month}/${date.day}', style: const TextStyle(fontSize: 10));
+                        return Text('${date.month}/${date.day}',
+                            style: const TextStyle(fontSize: 10));
                       },
                     ),
                   ),
@@ -300,7 +330,8 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Sessions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text('Sessions',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
           if (filtered.isEmpty)
             const Text('No sessions recorded yet.')
@@ -339,5 +370,22 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
 
   String _fmtTime(DateTime dt) {
     return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+  }
+
+  bool _hasMeaningfulDailyLog(DailyLog? log) {
+    if (log == null) {
+      return false;
+    }
+    return log.totalSteps > 0 ||
+        log.totalActiveMinutes > 0 ||
+        log.totalSessions > 0 ||
+        log.avgKneeAngle > 0;
+  }
+
+  bool _hasMeaningfulTrend(List<DailyLog>? logs) {
+    if (logs == null || logs.isEmpty) {
+      return false;
+    }
+    return logs.any(_hasMeaningfulDailyLog);
   }
 }

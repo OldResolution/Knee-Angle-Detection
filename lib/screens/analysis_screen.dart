@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../models/daily_log.dart';
 import '../models/knee_data_point.dart';
 import '../services/ble_providers.dart';
 import '../services/gait_classification_service.dart';
 import '../services/ml_providers.dart';
+import '../services/session_providers.dart';
+import '../services/simulation_analytics_providers.dart';
 import '../widgets/app_drawer.dart';
 import '../widgets/app_bottom_nav.dart';
 import '../widgets/app_top_nav.dart';
@@ -28,7 +31,8 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     if (history.length < 10) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Need at least 10 data points. Start a live session first.'),
+          content:
+              Text('Need at least 10 data points. Start a live session first.'),
           backgroundColor: Color(0xFFD32F2F),
         ),
       );
@@ -77,36 +81,52 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     final angles = data.map((p) => p.angle).toList();
     final speeds = data.map((p) => p.speed).toList();
 
-    double mean(List<double> v) => v.isEmpty ? 0 : v.reduce((a, b) => a + b) / v.length;
+    double mean(List<double> v) =>
+        v.isEmpty ? 0 : v.reduce((a, b) => a + b) / v.length;
     double variance(List<double> v) {
       final m = mean(v);
-      return v.isEmpty ? 0 : v.map((x) => (x - m) * (x - m)).reduce((a, b) => a + b) / v.length;
+      return v.isEmpty
+          ? 0
+          : v.map((x) => (x - m) * (x - m)).reduce((a, b) => a + b) / v.length;
     }
+
     double std(List<double> v) {
       final va = variance(v);
       return va > 0 ? _sqrt(va) : 0;
     }
-    double maxVal(List<double> v) => v.isEmpty ? 0 : v.reduce((a, b) => a > b ? a : b);
-    double minVal(List<double> v) => v.isEmpty ? 0 : v.reduce((a, b) => a < b ? a : b);
-    double rms(List<double> v) => v.isEmpty ? 0 : _sqrt(v.map((x) => x * x).reduce((a, b) => a + b) / v.length);
-    double absMean(List<double> v) => v.isEmpty ? 0 : v.map((x) => x.abs()).reduce((a, b) => a + b) / v.length;
+
+    double maxVal(List<double> v) =>
+        v.isEmpty ? 0 : v.reduce((a, b) => a > b ? a : b);
+    double minVal(List<double> v) =>
+        v.isEmpty ? 0 : v.reduce((a, b) => a < b ? a : b);
+    double rms(List<double> v) => v.isEmpty
+        ? 0
+        : _sqrt(v.map((x) => x * x).reduce((a, b) => a + b) / v.length);
+    double absMean(List<double> v) => v.isEmpty
+        ? 0
+        : v.map((x) => x.abs()).reduce((a, b) => a + b) / v.length;
 
     // Skewness
     double skewness(List<double> v) {
       final m = mean(v);
       final s = std(v);
       if (s == 0 || v.length < 3) return 0;
-      return v.map((x) => ((x - m) / s) * ((x - m) / s) * ((x - m) / s)).reduce((a, b) => a + b) / v.length;
+      return v
+              .map((x) => ((x - m) / s) * ((x - m) / s) * ((x - m) / s))
+              .reduce((a, b) => a + b) /
+          v.length;
     }
+
     // Kurtosis
     double kurtosis(List<double> v) {
       final m = mean(v);
       final s = std(v);
       if (s == 0 || v.length < 4) return 0;
       return v.map((x) {
-        final z = (x - m) / s;
-        return z * z * z * z;
-      }).reduce((a, b) => a + b) / v.length;
+            final z = (x - m) / s;
+            return z * z * z * z;
+          }).reduce((a, b) => a + b) /
+          v.length;
     }
 
     // pk = max, mid = median
@@ -114,7 +134,9 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
       if (v.isEmpty) return 0;
       final sorted = [...v]..sort();
       final mid = sorted.length ~/ 2;
-      return sorted.length.isOdd ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+      return sorted.length.isOdd
+          ? sorted[mid]
+          : (sorted[mid - 1] + sorted[mid]) / 2;
     }
 
     // Build stat block for a signal (maps to Xvel, Yvel, Zvel, knee, ankle prefixes)
@@ -176,7 +198,11 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
       'right_stride_length': strideLengthEst * 0.99,
       'stride_speed': mean(speeds) * 0.02,
       'stride_time': data.length > 1
-          ? data.last.timestamp.difference(data.first.timestamp).inMilliseconds / 1000.0 / (data.length / 40)
+          ? data.last.timestamp
+                  .difference(data.first.timestamp)
+                  .inMilliseconds /
+              1000.0 /
+              (data.length / 40)
           : 0.6,
       'step_width': 0.2,
       'mean_stride_length': strideLengthEst,
@@ -214,6 +240,9 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     final history = ref.watch(kneeDataHistoryProvider);
     final prediction = ref.watch(latestGaitPredictionProvider);
     final modelAsync = ref.watch(gaitClassificationProvider);
+    final trend30Async = ref.watch(trendDataProvider(30));
+    final simulatedTrend = ref.watch(simulatedTrendLogsProvider(30));
+    final isSimulationMode = ref.watch(simulationModeProvider);
 
     final peakAngle = history.isEmpty
         ? 0.0
@@ -221,6 +250,14 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     final avgSpeed = history.isEmpty
         ? 0.0
         : history.map((p) => p.speed).reduce((a, b) => a + b) / history.length;
+    final trendLogs = trend30Async.valueOrNull;
+    final chartLogs = (trendLogs != null &&
+            trendLogs.any((log) =>
+                log.avgKneeAngle > 0 ||
+                log.totalSteps > 0 ||
+                log.totalSessions > 0))
+        ? trendLogs
+        : (isSimulationMode ? simulatedTrend : const <DailyLog>[]);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9FA),
@@ -240,48 +277,61 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                  Text(
-                    'Performance & Analysis',
-                    style: TextStyle(
-                      fontSize: ResponsiveLayout.headlineSize(context),
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF4C3E8A),
+                    Text(
+                      'Performance & Analysis',
+                      style: TextStyle(
+                        fontSize: ResponsiveLayout.headlineSize(context),
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF4C3E8A),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Complete diagnostic overview and historical kinetic data.',
-                    style: TextStyle(fontSize: 16, color: Colors.black54),
-                  ),
-                  const SizedBox(height: 32),
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      if (constraints.maxWidth > ResponsiveLayout.tabletMaxWidth) {
-                        return Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              flex: 2,
-                              child: _buildMetricsColumn(peakAngle, avgSpeed, history.length),
-                            ),
-                            const SizedBox(width: 32),
-                            Expanded(flex: 5, child: _buildProgressChartCard()),
-                          ],
-                        );
-                      } else {
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _buildProgressChartCard(),
-                            const SizedBox(height: 32),
-                            _buildMetricsColumn(peakAngle, avgSpeed, history.length),
-                          ],
-                        );
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 32),
-                  _buildMLPredictionCard(prediction, modelAsync, history.length),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Complete diagnostic overview and historical kinetic data.',
+                      style: TextStyle(fontSize: 16, color: Colors.black54),
+                    ),
+                    const SizedBox(height: 32),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        if (constraints.maxWidth >
+                            ResponsiveLayout.tabletMaxWidth) {
+                          return Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                flex: 2,
+                                child: _buildMetricsColumn(
+                                    peakAngle, avgSpeed, history.length),
+                              ),
+                              const SizedBox(width: 32),
+                              Expanded(
+                                flex: 5,
+                                child: _buildProgressChartCard(
+                                  chartLogs,
+                                  isSimulationMode: isSimulationMode,
+                                ),
+                              ),
+                            ],
+                          );
+                        } else {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _buildProgressChartCard(
+                                chartLogs,
+                                isSimulationMode: isSimulationMode,
+                              ),
+                              const SizedBox(height: 32),
+                              _buildMetricsColumn(
+                                  peakAngle, avgSpeed, history.length),
+                            ],
+                          );
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 32),
+                    _buildMLPredictionCard(
+                        prediction, modelAsync, history.length),
                   ],
                 ),
               ),
@@ -292,19 +342,24 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     );
   }
 
-  Widget _buildMetricsColumn(double peakAngle, double avgSpeed, int sampleCount) {
+  Widget _buildMetricsColumn(
+      double peakAngle, double avgSpeed, int sampleCount) {
     return Column(
       children: [
-        _buildStatCard('Peak Angle', '${peakAngle.toStringAsFixed(1)}°', peakAngle > 90, Icons.trending_up),
+        _buildStatCard('Peak Angle', '${peakAngle.toStringAsFixed(1)}°',
+            peakAngle > 90, Icons.trending_up),
         const SizedBox(height: 16),
-        _buildStatCard('Avg Velocity', '${avgSpeed.toStringAsFixed(1)}°/s', true, Icons.speed),
+        _buildStatCard('Avg Velocity', '${avgSpeed.toStringAsFixed(1)}°/s',
+            true, Icons.speed),
         const SizedBox(height: 16),
-        _buildStatCard('Samples', '$sampleCount', sampleCount > 50, Icons.data_usage),
+        _buildStatCard(
+            'Samples', '$sampleCount', sampleCount > 50, Icons.data_usage),
       ],
     );
   }
 
-  Widget _buildStatCard(String title, String value, bool isPositive, IconData icon) {
+  Widget _buildStatCard(
+      String title, String value, bool isPositive, IconData icon) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -312,7 +367,10 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4)),
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 10,
+              offset: const Offset(0, 4)),
         ],
       ),
       child: Column(
@@ -322,7 +380,9 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
             children: [
               Icon(icon, size: 20, color: const Color(0xFF4C3E8A)),
               const SizedBox(width: 8),
-              Text(title, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black54)),
+              Text(title,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, color: Colors.black54)),
             ],
           ),
           const SizedBox(height: 16),
@@ -330,7 +390,11 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
             children: [
-              Text(value, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.black87)),
+              Text(value,
+                  style: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87)),
               const Spacer(),
               Icon(
                 isPositive ? Icons.arrow_upward : Icons.remove,
@@ -344,7 +408,17 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     );
   }
 
-  Widget _buildProgressChartCard() {
+  Widget _buildProgressChartCard(
+    List<DailyLog> logs, {
+    required bool isSimulationMode,
+  }) {
+    final spots = logs.isEmpty
+        ? <FlSpot>[]
+        : List<FlSpot>.generate(
+            logs.length,
+            (index) => FlSpot(index.toDouble(), logs[index].avgKneeAngle),
+          );
+
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFFE8E6EB),
@@ -363,13 +437,25 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                 width: 320,
                 child: Text(
                   'Historical Flexion Trajectory',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF4C3E8A)),
+                  style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF4C3E8A)),
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24)),
-                child: const Text('Past 30 Days', style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF4C3E8A))),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24)),
+                child: Text(
+                  isSimulationMode && spots.isNotEmpty
+                      ? 'Past 30 Days | Simulated'
+                      : 'Past 30 Days',
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w600, color: Color(0xFF4C3E8A)),
+                ),
               ),
             ],
           ),
@@ -380,20 +466,19 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
               LineChartData(
                 gridData: const FlGridData(show: false),
                 titlesData: const FlTitlesData(
-                  bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  bottomTitles:
+                      AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  leftTitles:
+                      AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  rightTitles:
+                      AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  topTitles:
+                      AxisTitles(sideTitles: SideTitles(showTitles: false)),
                 ),
                 borderData: FlBorderData(show: false),
                 lineBarsData: [
                   LineChartBarData(
-                    spots: const [
-                      FlSpot(0, 60), FlSpot(1, 65), FlSpot(2, 70), FlSpot(3, 68),
-                      FlSpot(4, 75), FlSpot(5, 80), FlSpot(6, 85), FlSpot(7, 90),
-                      FlSpot(8, 92), FlSpot(9, 100), FlSpot(10, 110), FlSpot(11, 115),
-                      FlSpot(12, 120),
-                    ],
+                    spots: spots,
                     isCurved: true,
                     color: const Color(0xFF5A4D9A),
                     barWidth: 5,
@@ -447,12 +532,18 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
               const Icon(Icons.psychology, color: Color(0xFF4C3E8A), size: 28),
               const Text(
                 'AI Gait Assessment',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
+                style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: isModelReady ? const Color(0xFFD6EAD8) : const Color(0xFFFFF8E1),
+                  color: isModelReady
+                      ? const Color(0xFFD6EAD8)
+                      : const Color(0xFFFFF8E1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -461,7 +552,9 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                     Icon(
                       isModelReady ? Icons.check_circle : Icons.hourglass_empty,
                       size: 14,
-                      color: isModelReady ? const Color(0xFF2E7D32) : const Color(0xFFF9A825),
+                      color: isModelReady
+                          ? const Color(0xFF2E7D32)
+                          : const Color(0xFFF9A825),
                     ),
                     const SizedBox(width: 4),
                     Text(
@@ -469,7 +562,9 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: isModelReady ? const Color(0xFF2E7D32) : const Color(0xFFF9A825),
+                        color: isModelReady
+                            ? const Color(0xFF2E7D32)
+                            : const Color(0xFFF9A825),
                       ),
                     ),
                   ],
@@ -487,7 +582,8 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
               'Run a gait analysis on your current session data to receive an AI-powered classification. '
               'The model evaluates 77 kinematic and spatio-temporal features to detect gait abnormalities '
               'such as limping, shuffling, instability, or stiff-knee patterns.',
-              style: TextStyle(height: 1.6, color: Colors.black87, fontSize: 15),
+              style:
+                  TextStyle(height: 1.6, color: Colors.black87, fontSize: 15),
             ),
 
           const SizedBox(height: 24),
@@ -498,16 +594,25 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
             runSpacing: 12,
             children: [
               ElevatedButton.icon(
-                onPressed: (isModelReady && !_isAnalysing && sampleCount >= 10) ? _runGaitAnalysis : null,
+                onPressed: (isModelReady && !_isAnalysing && sampleCount >= 10)
+                    ? _runGaitAnalysis
+                    : null,
                 icon: _isAnalysing
-                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white))
                     : const Icon(Icons.analytics),
-                label: Text(_isAnalysing ? 'Analysing...' : 'Run Gait Analysis'),
+                label:
+                    Text(_isAnalysing ? 'Analysing...' : 'Run Gait Analysis'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF4C3E8A),
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
                 ),
               ),
               if (prediction != null)
@@ -517,9 +622,11 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                   label: const Text('Export Report'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFF4C3E8A),
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 16),
                     side: const BorderSide(color: Color(0xFF4C3E8A)),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
             ],
@@ -568,7 +675,8 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                     const SizedBox(height: 4),
                     Text(
                       config.description,
-                      style: const TextStyle(color: Colors.black54, fontSize: 13, height: 1.4),
+                      style: const TextStyle(
+                          color: Colors.black54, fontSize: 13, height: 1.4),
                     ),
                   ],
                 ),
@@ -584,7 +692,8 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                       color: config.color,
                     ),
                   ),
-                  const Text('confidence', style: TextStyle(fontSize: 11, color: Colors.black45)),
+                  const Text('confidence',
+                      style: TextStyle(fontSize: 11, color: Colors.black45)),
                 ],
               ),
             ],
@@ -603,7 +712,10 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text('Class Probabilities',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black54)),
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: Colors.black54)),
               const SizedBox(height: 12),
               ...prediction.probabilities.entries.map((entry) {
                 final isTop = entry.key == prediction.label;
@@ -617,7 +729,8 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                           entry.key,
                           style: TextStyle(
                             fontSize: 13,
-                            fontWeight: isTop ? FontWeight.bold : FontWeight.normal,
+                            fontWeight:
+                                isTop ? FontWeight.bold : FontWeight.normal,
                             color: isTop ? Colors.black87 : Colors.black54,
                           ),
                         ),
@@ -629,9 +742,12 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                           child: LinearProgressIndicator(
                             value: entry.value,
                             minHeight: 8,
-                            backgroundColor: Colors.black.withValues(alpha: 0.05),
+                            backgroundColor:
+                                Colors.black.withValues(alpha: 0.05),
                             valueColor: AlwaysStoppedAnimation(
-                              isTop ? _classConfig(entry.key).color : Colors.black26,
+                              isTop
+                                  ? _classConfig(entry.key).color
+                                  : Colors.black26,
                             ),
                           ),
                         ),
@@ -644,7 +760,8 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                           textAlign: TextAlign.right,
                           style: TextStyle(
                             fontSize: 12,
-                            fontWeight: isTop ? FontWeight.bold : FontWeight.normal,
+                            fontWeight:
+                                isTop ? FontWeight.bold : FontWeight.normal,
                             color: isTop ? Colors.black87 : Colors.black54,
                           ),
                         ),

@@ -24,22 +24,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<Map<String, dynamic>?> _fetchProfile() async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return null;
+
+    final metadata = Map<String, dynamic>.from(user.userMetadata ?? const {});
+    final fallback = <String, dynamic>{
+      'name': metadata['name'],
+      'email': user.email,
+      'mobile': metadata['mobile'],
+      'age': metadata['age'],
+      'gender': metadata['gender'],
+    };
+
     try {
       final data = await Supabase.instance.client
           .from('profiles')
           .select()
           .eq('id', user.id)
           .single();
-      return data;
+      return {
+        ...fallback,
+        ...Map<String, dynamic>.from(data),
+      };
     } catch (e) {
-      return null;
+      return fallback;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9F9FC), // Light purple-ish gray background matching mockup
+      backgroundColor: const Color(
+          0xFFF9F9FC), // Light purple-ish gray background matching mockup
       drawer: const AppDrawer(currentRoute: 'Profile'),
       bottomNavigationBar: const AppBottomNav(currentIndex: 2),
       body: Column(
@@ -47,84 +61,87 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const AppTopNav(),
           Expanded(
             child: FutureBuilder<Map<String, dynamic>?>(
-              future: _profileFuture,
-              builder: (context, snapshot) {
-                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                 }
-                 
-                 final data = snapshot.data ?? {};
-                 final name = data['name'] as String? ?? 'User';
-                 final email = data['email'] as String? ?? 'No email provided';
-                 final mobile = data['mobile'] as String? ?? 'N/A';
-                 final age = data['age']?.toString() ?? 'N/A';
+                future: _profileFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
-                 return SingleChildScrollView(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: ResponsiveLayout.horizontalPadding(context),
-                    vertical: ResponsiveLayout.verticalPadding(context),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildHeader(context),
-                      SizedBox(height: ResponsiveLayout.sectionGap(context)),
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          if (constraints.maxWidth > ResponsiveLayout.tabletMaxWidth) {
-                            return Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                  flex: 4,
-                                  child: Column(
-                                    children: [
-                                      _buildUserAvatarCard(context, name),
-                                      const SizedBox(height: 24),
-                                      _buildClinicalTeamCard(context),
-                                    ],
+                  final data = snapshot.data ?? {};
+                  final name = data['name'] as String? ?? 'User';
+                  final email = data['email'] as String? ?? 'No email provided';
+                  final mobile = data['mobile'] as String? ?? 'N/A';
+                  final age = data['age']?.toString() ?? 'N/A';
+
+                  return SingleChildScrollView(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: ResponsiveLayout.horizontalPadding(context),
+                      vertical: ResponsiveLayout.verticalPadding(context),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildHeader(context),
+                        SizedBox(height: ResponsiveLayout.sectionGap(context)),
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            if (constraints.maxWidth >
+                                ResponsiveLayout.tabletMaxWidth) {
+                              return Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    flex: 4,
+                                    child: Column(
+                                      children: [
+                                        _buildUserAvatarCard(context, name),
+                                        const SizedBox(height: 24),
+                                        _buildClinicalTeamCard(context),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(width: 32),
-                                Expanded(
-                                  flex: 7,
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                                    children: [
-                                      _buildPersonalInfoCard(context, email, mobile, age),
-                                      const SizedBox(height: 24),
-                                      _buildAccountSettingsCard(context),
-                                      const SizedBox(height: 24),
-                                      _buildDangerZoneCard(context),
-                                    ],
+                                  const SizedBox(width: 32),
+                                  Expanded(
+                                    flex: 7,
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: [
+                                        _buildPersonalInfoCard(
+                                            context, email, mobile, age),
+                                        const SizedBox(height: 24),
+                                        _buildAccountSettingsCard(context),
+                                        const SizedBox(height: 24),
+                                        _buildDangerZoneCard(context),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              ],
-                            );
-                          } else {
-                            // Mobile/Small Screen Layout
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                _buildUserAvatarCard(context, name),
-                                const SizedBox(height: 24),
-                                _buildPersonalInfoCard(context, email, mobile, age),
-                                const SizedBox(height: 24),
-                                _buildClinicalTeamCard(context),
-                                const SizedBox(height: 24),
-                                _buildAccountSettingsCard(context),
-                                const SizedBox(height: 24),
-                                _buildDangerZoneCard(context),
-                              ],
-                            );
-                          }
-                        },
-                      ),
-                    ],
-                  ),
-                );
-              }
-            ),
+                                ],
+                              );
+                            } else {
+                              // Mobile/Small Screen Layout
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  _buildUserAvatarCard(context, name),
+                                  const SizedBox(height: 24),
+                                  _buildPersonalInfoCard(
+                                      context, email, mobile, age),
+                                  const SizedBox(height: 24),
+                                  _buildClinicalTeamCard(context),
+                                  const SizedBox(height: 24),
+                                  _buildAccountSettingsCard(context),
+                                  const SizedBox(height: 24),
+                                  _buildDangerZoneCard(context),
+                                ],
+                              );
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  );
+                }),
           ),
         ],
       ),
@@ -155,7 +172,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildCard({required BuildContext context, required Widget child, EdgeInsetsGeometry? padding}) {
+  Widget _buildCard(
+      {required BuildContext context,
+      required Widget child,
+      EdgeInsetsGeometry? padding}) {
     final isMobile = ResponsiveLayout.isMobile(context);
 
     return Container(
@@ -190,7 +210,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               CircleAvatar(
                 radius: isMobile ? 48 : 64,
                 backgroundColor: const Color(0xFFD6CFF0),
-                child: Icon(Icons.person, size: isMobile ? 46 : 60, color: const Color(0xFF4C3E8A)),
+                child: Icon(Icons.person,
+                    size: isMobile ? 46 : 60, color: const Color(0xFF4C3E8A)),
               ),
               Container(
                 decoration: const BoxDecoration(
@@ -199,7 +220,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 padding: EdgeInsets.all(isMobile ? 6 : 8),
                 margin: const EdgeInsets.only(bottom: 4, right: 4),
-                child: Icon(Icons.edit, size: isMobile ? 14 : 16, color: Colors.white),
+                child: Icon(Icons.edit,
+                    size: isMobile ? 14 : 16, color: Colors.white),
               )
             ],
           ),
@@ -261,7 +283,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   color: const Color(0xFFEBE8F6),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.medical_services_outlined, color: Color(0xFF4C3E8A), size: 24),
+                child: const Icon(Icons.medical_services_outlined,
+                    color: Color(0xFF4C3E8A), size: 24),
               ),
               const SizedBox(width: 16),
               Text(
@@ -311,7 +334,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildPersonalInfoCard(BuildContext context, String email, String mobile, String age) {
+  Widget _buildPersonalInfoCard(
+      BuildContext context, String email, String mobile, String age) {
     final isMobile = ResponsiveLayout.isMobile(context);
 
     return _buildCard(
@@ -328,7 +352,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     Text(
                       'Personal Information',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      style:
+                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                     SizedBox(height: 4),
                     Text(
@@ -341,7 +366,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               TextButton(
                 onPressed: () {},
-                child: const Text('Edit', style: TextStyle(color: Color(0xFF4C3E8A), fontWeight: FontWeight.bold)),
+                child: const Text('Edit',
+                    style: TextStyle(
+                        color: Color(0xFF4C3E8A), fontWeight: FontWeight.bold)),
               ),
             ],
           ),
@@ -353,7 +380,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               if (constraints.maxWidth <= ResponsiveLayout.mobileMaxWidth) {
                 return Column(
                   children: [
-                    _buildTextField('Phone Number', mobile, Icons.phone_outlined),
+                    _buildTextField(
+                        'Phone Number', mobile, Icons.phone_outlined),
                     const SizedBox(height: 16),
                     _buildTextField('Age', age, Icons.calendar_today_outlined),
                   ],
@@ -362,9 +390,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
               return Row(
                 children: [
-                  Expanded(child: _buildTextField('Phone Number', mobile, Icons.phone_outlined)),
+                  Expanded(
+                      child: _buildTextField(
+                          'Phone Number', mobile, Icons.phone_outlined)),
                   const SizedBox(width: 16),
-                  Expanded(child: _buildTextField('Age', age, Icons.calendar_today_outlined)),
+                  Expanded(
+                      child: _buildTextField(
+                          'Age', age, Icons.calendar_today_outlined)),
                 ],
               );
             },
@@ -431,7 +463,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           SizedBox(height: isMobile ? 20 : 32),
           const Row(
             children: [
-              Icon(Icons.notifications_active, color: Color(0xFF4C3E8A), size: 20),
+              Icon(Icons.notifications_active,
+                  color: Color(0xFF4C3E8A), size: 20),
               SizedBox(width: 12),
               Text(
                 'Notification Preferences',
@@ -448,11 +481,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             child: Column(
               children: [
-                _buildToggleRow('Email Updates', 'Weekly recovery summaries', true),
+                _buildToggleRow(
+                    'Email Updates', 'Weekly recovery summaries', true),
                 const SizedBox(height: 24),
-                _buildToggleRow('Push Notifications', 'Daily session reminders', true),
+                _buildToggleRow(
+                    'Push Notifications', 'Daily session reminders', true),
                 const SizedBox(height: 24),
-                _buildToggleRow('SMS Alerts', 'Urgent clinical messages only', false),
+                _buildToggleRow(
+                    'SMS Alerts', 'Urgent clinical messages only', false),
               ],
             ),
           ),
@@ -473,12 +509,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
             icon: const Icon(Icons.key, color: Color(0xFF4C3E8A), size: 18),
             label: const Text(
               'Change Password',
-              style: TextStyle(color: Color(0xFF4C3E8A), fontWeight: FontWeight.bold),
+              style: TextStyle(
+                  color: Color(0xFF4C3E8A), fontWeight: FontWeight.bold),
             ),
             style: OutlinedButton.styleFrom(
-              padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 24, vertical: 14),
+              padding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 16 : 24, vertical: 14),
               side: const BorderSide(color: Color(0xFFE2E2E6)),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
             ),
           ),
         ],
@@ -494,9 +533,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              Text(title,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 14)),
               const SizedBox(height: 4),
-              Text(subtitle, style: const TextStyle(color: Colors.black54, fontSize: 12)),
+              Text(subtitle,
+                  style: const TextStyle(color: Colors.black54, fontSize: 12)),
             ],
           ),
         ),
@@ -524,7 +566,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 24),
+              const Icon(Icons.warning_amber_rounded,
+                  color: Colors.red, size: 24),
               const SizedBox(width: 12),
               Text(
                 'Danger Zone',
@@ -545,9 +588,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           OutlinedButton(
             onPressed: () {},
             style: OutlinedButton.styleFrom(
-              padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 24, vertical: 14),
+              padding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 16 : 24, vertical: 14),
               side: const BorderSide(color: Colors.red),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
             ),
             child: const Text(
               'Deactivate Account',

@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:ui';
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
@@ -7,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/knee_data_point.dart';
 import '../services/ble_providers.dart';
 import '../services/goals_providers.dart';
+import '../services/simulation_analytics_providers.dart';
 import '../widgets/app_drawer.dart';
 import '../widgets/app_bottom_nav.dart';
 import '../widgets/app_top_nav.dart';
@@ -20,10 +22,10 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-
   @override
   Widget build(BuildContext context) {
-    ref.listen<GoalCompletionSignal?>(goalCompletionNotifierProvider, (previous, next) {
+    ref.listen<GoalCompletionSignal?>(goalCompletionNotifierProvider,
+        (previous, next) {
       if (next == null) {
         return;
       }
@@ -43,6 +45,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final steps = ref.watch(todayStepsProvider);
     final activeMinutes = ref.watch(todayActiveMinutesProvider);
     final activeHours = activeMinutes / 60.0;
+    final insights = ref.watch(dashboardInsightProvider);
+    final isSimulationMode = ref.watch(simulationModeProvider);
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -64,7 +68,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   const SizedBox(height: 32),
                   LayoutBuilder(
                     builder: (context, constraints) {
-                      if (constraints.maxWidth > ResponsiveLayout.tabletMaxWidth) {
+                      if (constraints.maxWidth >
+                          ResponsiveLayout.tabletMaxWidth) {
                         return Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -72,7 +77,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               flex: 6,
                               child: Column(
                                 children: [
-                                  _buildLiveChartCard(context, current, history, liveActive),
+                                  _buildLiveChartCard(
+                                      context, current, history, liveActive),
                                   const SizedBox(height: 24),
                                   Row(
                                     children: [
@@ -99,14 +105,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               ),
                             ),
                             const SizedBox(width: 32),
-                            Expanded(flex: 3, child: _buildSystemAnalysisPanel()),
+                            Expanded(
+                              flex: 3,
+                              child: _buildSystemAnalysisPanel(
+                                insights,
+                                isSimulationMode: isSimulationMode,
+                              ),
+                            ),
                           ],
                         );
                       }
 
                       return Column(
                         children: [
-                          _buildLiveChartCard(context, current, history, liveActive),
+                          _buildLiveChartCard(
+                              context, current, history, liveActive),
                           const SizedBox(height: 24),
                           _buildStatCard(
                             'Total Steps',
@@ -122,7 +135,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             const Color(0xFFE5E0CB),
                           ),
                           const SizedBox(height: 32),
-                          _buildSystemAnalysisPanel(),
+                          _buildSystemAnalysisPanel(
+                            insights,
+                            isSimulationMode: isSimulationMode,
+                          ),
                         ],
                       );
                     },
@@ -153,192 +169,295 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildLiveChartCard(BuildContext context, KneeDataPoint? current, List<KneeDataPoint> history, bool liveActive) {
-    final points = history;
+  Widget _buildLiveChartCard(BuildContext context, KneeDataPoint? current,
+      List<KneeDataPoint> history, bool liveActive) {
+    // Only process the visible window of points for performance
+    final visibleCount = 100;
+    final startIndex = max(0, history.length - visibleCount);
+    final visiblePoints = history.skip(startIndex).toList();
+
     final spots = <FlSpot>[];
-    for (var i = 0; i < points.length; i++) {
-      spots.add(FlSpot(i.toDouble(), points[i].angle));
+    for (var i = 0; i < visiblePoints.length; i++) {
+      spots.add(FlSpot((startIndex + i).toDouble(), visiblePoints[i].angle));
     }
 
-    final currentAngle = current?.angle ?? (history.isNotEmpty ? history.last.angle : 0.0);
-    final maxX = points.isEmpty ? 60.0 : max(60.0, points.length.toDouble());
+    final currentAngle =
+        current?.angle ?? (history.isNotEmpty ? history.last.angle : 0.0);
+    final maxX = history.isEmpty ? 60.0 : max(60.0, history.length.toDouble());
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Live Knee Angle',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        _PulseDot(active: liveActive),
-                        const SizedBox(width: 8),
-                        Text(
-                          liveActive ? 'Streaming Data Active' : 'Waiting for stream',
-                          style: const TextStyle(color: Colors.black54, fontSize: 13),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    '${currentAngle.toStringAsFixed(1)} deg',
-                    style: const TextStyle(
-                      fontSize: 34,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF4C3E8A),
-                      height: 1,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'CURRENT FLEXION',
-                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.2, color: Color(0xFF4C3E8A)),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 28),
-          SizedBox(
-            height: 220,
-            child: LineChart(
-              LineChartData(
-                gridData: FlGridData(
-                  show: true,
-                  drawVerticalLine: true,
-                  horizontalInterval: 30,
-                  getDrawingHorizontalLine: (_) => const FlLine(color: Color(0xFFE4E2EA), strokeWidth: 1),
-                  getDrawingVerticalLine: (_) => const FlLine(color: Color(0xFFEDEBF2), strokeWidth: 1),
-                ),
-                minX: max(0, maxX - 120),
-                maxX: maxX,
-                minY: 0,
-                maxY: 180,
-                borderData: FlBorderData(show: false),
-                titlesData: FlTitlesData(
-                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 42,
-                      interval: 30,
-                      getTitlesWidget: (value, _) => Text('${value.toInt()} deg', style: const TextStyle(fontSize: 10, color: Colors.black54)),
-                    ),
-                  ),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      interval: 20,
-                      getTitlesWidget: (value, _) => Text('-${(maxX - value).round()}', style: const TextStyle(fontSize: 10, color: Colors.black54)),
-                    ),
-                  ),
-                ),
-                lineBarsData: [
-                  LineChartBarData(
-                    spots: spots,
-                    isCurved: true,
-                    color: const Color(0xFF6750A4),
-                    barWidth: 3,
-                    dotData: const FlDotData(show: false),
-                    belowBarData: BarAreaData(
-                      show: true,
-                      gradient: LinearGradient(
-                        colors: [
-                          const Color(0xFF6750A4).withValues(alpha: 0.2),
-                          const Color(0xFF6750A4).withValues(alpha: 0.0),
-                        ],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-      ),
-    );
-  }
-
-  Widget _buildStatCard(String title, String value, IconData icon, Color iconBg) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(8)),
-            child: Icon(icon, color: const Color(0xFF4C3E8A)),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 8),
-                Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF4C3E8A))),
-              ],
-            ),
-          ),
-        ],
-      ),
-      ),
-    );
-  }
-
-  Widget _buildSystemAnalysisPanel() {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('System Analysis', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF4C3E8A))),
+            LayoutBuilder(builder: (context, constraints) {
+              final isNarrow = constraints.maxWidth < 340;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Live Knee Angle',
+                              style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87),
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                _PulseDot(active: liveActive),
+                                const SizedBox(width: 8),
+                                Flexible(
+                                  child: Text(
+                                    liveActive
+                                        ? 'Streaming Data Active'
+                                        : 'Waiting for stream',
+                                    style: const TextStyle(
+                                        color: Colors.black54, fontSize: 13),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      SizedBox(
+                        width:
+                            90, // Reserved width for 3 digits + decimal + " deg"
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                '${currentAngle.toStringAsFixed(1)} deg',
+                                style: const TextStyle(
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF4C3E8A),
+                                  height: 1,
+                                  fontFeatures: [FontFeature.tabularFigures()],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            const Text(
+                              'CURRENT FLEXION',
+                              style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1.0,
+                                  color: Color(0xFF4C3E8A)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            }),
+            const SizedBox(height: 28),
+            SizedBox(
+              height: 220,
+              child: RepaintBoundary(
+                child: LineChart(
+                  LineChartData(
+                    gridData: FlGridData(
+                      show: true,
+                      drawVerticalLine: true,
+                      horizontalInterval: 45,
+                      verticalInterval: 20,
+                      getDrawingHorizontalLine: (_) => FlLine(
+                          color: const Color(0xFF6750A4).withValues(alpha: 0.1),
+                          strokeWidth: 1),
+                      getDrawingVerticalLine: (_) => FlLine(
+                          color:
+                              const Color(0xFF6750A4).withValues(alpha: 0.05),
+                          strokeWidth: 1),
+                    ),
+                    minX: max(0, maxX - 80), // Tighter window for less "travel"
+                    maxX: maxX,
+                    minY: 0,
+                    maxY: 180,
+                    clipData: const FlClipData.all(),
+                    borderData: FlBorderData(show: false),
+                    titlesData: FlTitlesData(
+                      topTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false)),
+                      rightTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false)),
+                      leftTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 40,
+                          interval: 45,
+                          getTitlesWidget: (value, _) => Text(
+                              '${value.toInt()}°',
+                              style: const TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.black45,
+                                  fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          interval: 20,
+                          getTitlesWidget: (value, _) => Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Text('${(value - maxX).toInt()}s',
+                                style: const TextStyle(
+                                    fontSize: 9, color: Colors.black38)),
+                          ),
+                        ),
+                      ),
+                    ),
+                    lineBarsData: [
+                      LineChartBarData(
+                        spots: spots,
+                        isCurved: true,
+                        color: const Color(0xFF6750A4),
+                        barWidth: 3,
+                        dotData: const FlDotData(show: false),
+                        belowBarData: BarAreaData(
+                          show: true,
+                          gradient: LinearGradient(
+                            colors: [
+                              const Color(0xFF6750A4).withValues(alpha: 0.2),
+                              const Color(0xFF6750A4).withValues(alpha: 0.0),
+                            ],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatCard(
+      String title, String value, IconData icon, Color iconBg) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                  color: iconBg, borderRadius: BorderRadius.circular(8)),
+              child: Icon(icon, color: const Color(0xFF4C3E8A)),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  Text(value,
+                      style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF4C3E8A))),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSystemAnalysisPanel(
+    DashboardInsightData insights, {
+    required bool isSimulationMode,
+  }) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'System Analysis',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF4C3E8A),
+                    ),
+                  ),
+                ),
+                if (isSimulationMode)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEDE9F5),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: const Text(
+                      'Simulation',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF4C3E8A),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
             const SizedBox(height: 20),
             _buildAlertCard(
               icon: Icons.warning_amber_rounded,
               iconColor: const Color(0xFF8B7D14),
               bgColor: Colors.white,
-              title: 'Prolonged Inactivity',
-              message: 'Knee has been static for over 45 minutes. Consider performing micro-movements.',
+              title: insights.primaryTitle,
+              message: insights.primaryMessage,
             ),
             const SizedBox(height: 12),
             _buildAlertCard(
               icon: Icons.check_circle,
               iconColor: const Color(0xFF524587),
               bgColor: Colors.white,
-              title: 'Extension Target Met',
-              message: 'You achieved full extension 3 times today during morning exercises.',
+              title: insights.secondaryTitle,
+              message: insights.secondaryMessage,
             ),
             const SizedBox(height: 24),
-            const Text('AI INSIGHT', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+            const Text('AI INSIGHT',
+                style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5)),
             const SizedBox(height: 8),
-            const Text(
-              'Your gait asymmetry has improved by 12% compared to last week. The current angle data suggests reduced stiffness during mid-day activity.',
-              style: TextStyle(color: Colors.black87, height: 1.5, fontSize: 14),
+            Text(
+              insights.aiInsight,
+              style:
+                  TextStyle(color: Colors.black87, height: 1.5, fontSize: 14),
             ),
             const SizedBox(height: 16),
             SizedBox(
@@ -348,7 +467,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 icon: const Icon(Icons.arrow_forward, size: 18),
                 label: const Text('View Detailed Report'),
                 style: FilledButton.styleFrom(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
               ),
@@ -359,7 +479,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildAlertCard({required IconData icon, required Color iconColor, required Color bgColor, required String title, required String message}) {
+  Widget _buildAlertCard(
+      {required IconData icon,
+      required Color iconColor,
+      required Color bgColor,
+      required String title,
+      required String message}) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -376,9 +501,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                Text(title,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 14)),
                 const SizedBox(height: 4),
-                Text(message, style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                Text(message,
+                    style:
+                        const TextStyle(fontSize: 12, color: Colors.black54)),
               ],
             ),
           ),
@@ -410,13 +539,16 @@ class _PulseDot extends StatefulWidget {
   State<_PulseDot> createState() => _PulseDotState();
 }
 
-class _PulseDotState extends State<_PulseDot> with SingleTickerProviderStateMixin {
+class _PulseDotState extends State<_PulseDot>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 1000))..repeat(reverse: true);
+    _controller = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1000))
+      ..repeat(reverse: true);
   }
 
   @override
@@ -451,7 +583,8 @@ class _PulseDotState extends State<_PulseDot> with SingleTickerProviderStateMixi
         width: 10,
         height: 10,
         decoration: BoxDecoration(
-          color: widget.active ? const Color(0xFF819230) : const Color(0xFF9E9E9E),
+          color:
+              widget.active ? const Color(0xFF819230) : const Color(0xFF9E9E9E),
           shape: BoxShape.circle,
         ),
       ),
