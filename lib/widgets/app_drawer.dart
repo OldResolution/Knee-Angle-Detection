@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:math' as math;
-import '../screens/home_screen.dart';
 import '../screens/live_angle_screen.dart';
 import '../screens/step_counter_screen.dart';
 import '../screens/alert_system_screen.dart';
 import '../screens/analysis_screen.dart';
+import '../screens/history_screen.dart';
 import '../screens/login_screen.dart';
+import '../theme/app_theme.dart';
 import 'responsive/responsive_layout.dart';
 
 class AppDrawer extends StatefulWidget {
@@ -49,7 +50,7 @@ class _AppDrawerState extends State<AppDrawer> {
 
     return Drawer(
       width: math.min(320, screenWidth * 0.82),
-      backgroundColor: const Color(0xFFFCFCFD),
+      backgroundColor: AppTheme.surface1,
       surfaceTintColor: Colors.transparent,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.horizontal(right: Radius.circular(24)),
@@ -59,17 +60,17 @@ class _AppDrawerState extends State<AppDrawer> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 24.0),
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 32.0),
               child: Row(
                 children: [
                   Container(
-                    width: 40,
-                    height: 40,
+                    width: 48,
+                    height: 48,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF5A4D9A),
-                      borderRadius: BorderRadius.circular(10),
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.accessibility_new, color: Colors.white, size: 24),
+                    child: const Icon(Icons.accessibility_new_outlined, color: AppTheme.primary, size: 32),
                   ),
                   const SizedBox(width: 16),
                   const Expanded(
@@ -79,19 +80,18 @@ class _AppDrawerState extends State<AppDrawer> {
                         Text(
                           'The Kinetic\nSanctuary',
                           style: TextStyle(
-                            color: Color(0xFF332A7C),
+                            color: AppTheme.textPrimary,
                             fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                            fontSize: 18,
                             height: 1.2,
                           ),
                         ),
                         SizedBox(height: 4),
                         Text(
-                          'CLINICAL PRECISION',
+                          'Clinical Precision',
                           style: TextStyle(
-                            color: Colors.black54,
-                            fontSize: 10,
-                            letterSpacing: 0.5,
+                            color: AppTheme.textSecondary,
+                            fontSize: 12,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -105,13 +105,7 @@ class _AppDrawerState extends State<AppDrawer> {
               child: SingleChildScrollView(
                 child: Column(
                   children: [
-                    _buildDrawerItem(
-                      context,
-                      icon: Icons.dashboard,
-                      title: 'Dashboard',
-                      isSelected: widget.currentRoute == 'Dashboard',
-                      targetScreen: const HomeScreen(),
-                    ),
+                    // Dashboard is now in bottom nav
                     _buildDrawerItem(
                       context,
                       icon: Icons.accessibility_new,
@@ -140,6 +134,13 @@ class _AppDrawerState extends State<AppDrawer> {
                       isSelected: widget.currentRoute == 'Analysis',
                       targetScreen: const AnalysisScreen(),
                     ),
+                    _buildDrawerItem(
+                      context,
+                      icon: Icons.history,
+                      title: 'History',
+                      isSelected: widget.currentRoute == 'History',
+                      targetScreen: const HistoryScreen(),
+                    ),
                   ],
                 ),
               ),
@@ -149,7 +150,7 @@ class _AppDrawerState extends State<AppDrawer> {
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF5F4F7),
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Column(
@@ -167,19 +168,18 @@ class _AppDrawerState extends State<AppDrawer> {
                             future: _profileFuture,
                             builder: (context, snapshot) {
                               final name = snapshot.data?['name'] as String? ?? 'Loading...';
-                              const role = 'Patient';
                               return Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     name,
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87),
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.textPrimary),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   const Text(
-                                    role,
-                                    style: TextStyle(color: Colors.black54, fontSize: 11),
+                                    'Attending Specialist',
+                                    style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
                                   ),
                                 ],
                               );
@@ -191,7 +191,7 @@ class _AppDrawerState extends State<AppDrawer> {
                     const SizedBox(height: 16),
                     SizedBox(
                       width: double.infinity,
-                      child: TextButton(
+                      child: OutlinedButton.icon(
                         onPressed: () async {
                           await Supabase.instance.client.auth.signOut();
                           if (!context.mounted) return;
@@ -200,21 +200,8 @@ class _AppDrawerState extends State<AppDrawer> {
                             MaterialPageRoute(builder: (_) => const LoginScreen()),
                           );
                         },
-                        style: TextButton.styleFrom(
-                          backgroundColor: const Color(0xFFEFEFF3),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                        ),
-                        child: const Text(
-                          'Sign Out',
-                          style: TextStyle(
-                            color: Color(0xFF332A7C),
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
-                          ),
-                        ),
+                        icon: const Icon(Icons.logout, size: 18),
+                        label: const Text('Sign out'),
                       ),
                     ),
                   ],
@@ -238,21 +225,21 @@ class _AppDrawerState extends State<AppDrawer> {
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
       child: Container(
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF6750A4) : Colors.transparent,
+          color: isSelected ? AppTheme.primary : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
         ),
         child: ListTile(
           leading: Icon(
             icon,
-            color: isSelected ? Colors.white : Colors.black87,
-            size: 22,
+            color: isSelected ? Colors.white : AppTheme.textPrimary,
+            size: 24,
           ),
           title: Text(
             title,
             style: TextStyle(
-              color: isSelected ? Colors.white : Colors.black87,
+              color: isSelected ? Colors.white : AppTheme.textPrimary,
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-              fontSize: 14,
+              fontSize: 16,
             ),
           ),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

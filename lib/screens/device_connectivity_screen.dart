@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/ble_providers.dart';
 import '../services/ble_service.dart';
 import '../widgets/app_footer.dart';
+import '../widgets/app_bottom_nav.dart';
 import '../widgets/app_top_nav.dart';
 import '../widgets/responsive/responsive_layout.dart';
 
@@ -65,6 +66,7 @@ class _DeviceConnectivityScreenState extends ConsumerState<DeviceConnectivityScr
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9FC),
+      bottomNavigationBar: const AppBottomNav(currentIndex: 0),
       body: Column(
         children: [
           const AppTopNav(),
@@ -74,9 +76,11 @@ class _DeviceConnectivityScreenState extends ConsumerState<DeviceConnectivityScr
                 horizontal: ResponsiveLayout.horizontalPadding(context),
                 vertical: ResponsiveLayout.verticalPadding(context),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+              child: ResponsiveLayout.constrainedPage(
+                context,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                   Text(
                     'Device Connectivity',
                     style: TextStyle(
@@ -272,9 +276,11 @@ class _DeviceConnectivityScreenState extends ConsumerState<DeviceConnectivityScr
                               ),
                             ],
                           ),
-                          child: Row(
-                            children: [
-                              Container(
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              final isNarrow = constraints.maxWidth <= ResponsiveLayout.mobileMaxWidth;
+
+                              final leadingIcon = Container(
                                 width: 48,
                                 height: 48,
                                 decoration: BoxDecoration(
@@ -285,49 +291,47 @@ class _DeviceConnectivityScreenState extends ConsumerState<DeviceConnectivityScr
                                   isNamedDevice ? Icons.bluetooth_searching : Icons.bluetooth_disabled,
                                   color: const Color(0xFF4C3E8A),
                                 ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            isNamedDevice ? name : 'Unnamed BLE device',
-                                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+                              );
+
+                              final details = Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          isNamedDevice ? name : 'Unnamed BLE device',
+                                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+                                        ),
+                                      ),
+                                      if (isNamedDevice)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFF3EDF7),
+                                            borderRadius: BorderRadius.circular(999),
+                                          ),
+                                          child: const Text(
+                                            'Named',
+                                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF4C3E8A)),
                                           ),
                                         ),
-                                        if (isNamedDevice)
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                            decoration: BoxDecoration(
-                                              color: const Color(0xFFF3EDF7),
-                                              borderRadius: BorderRadius.circular(999),
-                                            ),
-                                            child: const Text(
-                                              'Named',
-                                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF4C3E8A)),
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      result.device.remoteId.str,
-                                      style: const TextStyle(fontSize: 12, color: Colors.black54),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'RSSI ${result.rssi} dBm',
-                                      style: const TextStyle(fontSize: 12, color: Colors.black54),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Column(
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    result.device.remoteId.str,
+                                    style: const TextStyle(fontSize: 12, color: Colors.black54),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'RSSI ${result.rssi} dBm',
+                                    style: const TextStyle(fontSize: 12, color: Colors.black54),
+                                  ),
+                                ],
+                              );
+
+                              final action = Column(
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
                                   if (isConnectedDevice)
@@ -348,13 +352,42 @@ class _DeviceConnectivityScreenState extends ConsumerState<DeviceConnectivityScr
                                     child: Text(isConnectedDevice ? 'Connected' : 'Connect'),
                                   ),
                                 ],
-                              ),
-                            ],
+                              );
+
+                              if (isNarrow) {
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        leadingIcon,
+                                        const SizedBox(width: 12),
+                                        Expanded(child: details),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Align(alignment: Alignment.centerRight, child: action),
+                                  ],
+                                );
+                              }
+
+                              return Row(
+                                children: [
+                                  leadingIcon,
+                                  const SizedBox(width: 16),
+                                  Expanded(child: details),
+                                  const SizedBox(width: 12),
+                                  action,
+                                ],
+                              );
+                            },
                           ),
                         );
                       },
                     ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

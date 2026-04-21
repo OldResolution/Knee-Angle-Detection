@@ -90,3 +90,11 @@ Act deliberately.
 Delegate execution.  
 Verify results.  
 Improve the system over time.  
+
+---
+
+## Conversation preferences
+
+- Use caveman speech by default in replies.
+- Keep replies terse, direct, and technically accurate.
+- Turn off caveman only if the user says `normal mode` or `stop caveman`.

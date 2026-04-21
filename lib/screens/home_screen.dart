@@ -6,22 +6,48 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/knee_data_point.dart';
 import '../services/ble_providers.dart';
+import '../services/goals_providers.dart';
 import '../widgets/app_drawer.dart';
+import '../widgets/app_bottom_nav.dart';
 import '../widgets/app_top_nav.dart';
 import '../widgets/responsive/responsive_layout.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+
+  @override
+  Widget build(BuildContext context) {
+    ref.listen<GoalCompletionSignal?>(goalCompletionNotifierProvider, (previous, next) {
+      if (next == null) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(next.message),
+          backgroundColor: next.color,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    });
+
     final current = ref.watch(currentKneeDataProvider);
     final history = ref.watch(kneeDataHistoryProvider);
     final liveActive = ref.watch(isLiveDataActiveProvider);
+    final goals = ref.watch(userGoalsProvider);
+    final steps = ref.watch(todayStepsProvider);
+    final activeMinutes = ref.watch(todayActiveMinutesProvider);
+    final activeHours = activeMinutes / 60.0;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF9F9FA),
+      backgroundColor: Theme.of(context).colorScheme.surface,
       drawer: const AppDrawer(currentRoute: 'Dashboard'),
+      bottomNavigationBar: const AppBottomNav(currentIndex: 0),
       body: Column(
         children: [
           const AppTopNav(),
@@ -50,9 +76,23 @@ class HomeScreen extends ConsumerWidget {
                                   const SizedBox(height: 24),
                                   Row(
                                     children: [
-                                      Expanded(child: _buildStatCard('Total Steps', '4,285 / 6,000 goal', Icons.directions_walk, const Color(0xFFD6CFF0))),
+                                      Expanded(
+                                        child: _buildStatCard(
+                                          'Total Steps',
+                                          '${_formatInt(steps)} / ${_formatInt(goals.dailyStepGoal)} goal',
+                                          Icons.directions_walk,
+                                          const Color(0xFFD6CFF0),
+                                        ),
+                                      ),
                                       const SizedBox(width: 24),
-                                      Expanded(child: _buildStatCard('Active Wear Hours', '6.5 hrs today', Icons.access_time_filled, const Color(0xFFE5E0CB))),
+                                      Expanded(
+                                        child: _buildStatCard(
+                                          'Active Wear Hours',
+                                          '${activeHours.toStringAsFixed(1)} hrs today',
+                                          Icons.access_time_filled,
+                                          const Color(0xFFE5E0CB),
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 ],
@@ -68,9 +108,19 @@ class HomeScreen extends ConsumerWidget {
                         children: [
                           _buildLiveChartCard(context, current, history, liveActive),
                           const SizedBox(height: 24),
-                          _buildStatCard('Total Steps', '4,285 / 6,000 goal', Icons.directions_walk, const Color(0xFFD6CFF0)),
+                          _buildStatCard(
+                            'Total Steps',
+                            '${_formatInt(steps)} / ${_formatInt(goals.dailyStepGoal)} goal',
+                            Icons.directions_walk,
+                            const Color(0xFFD6CFF0),
+                          ),
                           const SizedBox(height: 24),
-                          _buildStatCard('Active Wear Hours', '6.5 hrs today', Icons.access_time_filled, const Color(0xFFE5E0CB)),
+                          _buildStatCard(
+                            'Active Wear Hours',
+                            '${activeHours.toStringAsFixed(1)} hrs today',
+                            Icons.access_time_filled,
+                            const Color(0xFFE5E0CB),
+                          ),
                           const SizedBox(height: 32),
                           _buildSystemAnalysisPanel(),
                         ],
@@ -92,16 +142,12 @@ class HomeScreen extends ConsumerWidget {
       children: [
         Text(
           'Knee Health Dashboard',
-          style: TextStyle(
-            fontSize: ResponsiveLayout.headlineSize(context),
-            fontWeight: FontWeight.bold,
-            color: const Color(0xFF4C3E8A),
-          ),
+          style: Theme.of(context).textTheme.displayMedium,
         ),
         const SizedBox(height: 8),
-        const Text(
+        Text(
           'Real-time metrics and recovery insights.',
-          style: TextStyle(fontSize: 16, color: Colors.black54),
+          style: Theme.of(context).textTheme.bodyLarge,
         ),
       ],
     );
@@ -117,13 +163,10 @@ class HomeScreen extends ConsumerWidget {
     final currentAngle = current?.angle ?? (history.isNotEmpty ? history.last.angle : 0.0);
     final maxX = points.isEmpty ? 60.0 : max(60.0, points.length.toDouble());
 
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFF5F4F7),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      padding: const EdgeInsets.all(24),
-      child: Column(
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -234,17 +277,15 @@ class HomeScreen extends ConsumerWidget {
           ),
         ],
       ),
+      ),
     );
   }
 
   Widget _buildStatCard(String title, String value, IconData icon, Color iconBg) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFF5F4F7),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      padding: const EdgeInsets.all(24),
-      child: Row(
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
@@ -264,30 +305,99 @@ class HomeScreen extends ConsumerWidget {
           ),
         ],
       ),
+      ),
     );
   }
 
   Widget _buildSystemAnalysisPanel() {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFE8E6EB),
-        borderRadius: BorderRadius.circular(16),
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('System Analysis', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF4C3E8A))),
+            const SizedBox(height: 20),
+            _buildAlertCard(
+              icon: Icons.warning_amber_rounded,
+              iconColor: const Color(0xFF8B7D14),
+              bgColor: Colors.white,
+              title: 'Prolonged Inactivity',
+              message: 'Knee has been static for over 45 minutes. Consider performing micro-movements.',
+            ),
+            const SizedBox(height: 12),
+            _buildAlertCard(
+              icon: Icons.check_circle,
+              iconColor: const Color(0xFF524587),
+              bgColor: Colors.white,
+              title: 'Extension Target Met',
+              message: 'You achieved full extension 3 times today during morning exercises.',
+            ),
+            const SizedBox(height: 24),
+            const Text('AI INSIGHT', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+            const SizedBox(height: 8),
+            const Text(
+              'Your gait asymmetry has improved by 12% compared to last week. The current angle data suggests reduced stiffness during mid-day activity.',
+              style: TextStyle(color: Colors.black87, height: 1.5, fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.arrow_forward, size: 18),
+                label: const Text('View Detailed Report'),
+                style: FilledButton.styleFrom(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+              ),
+            )
+          ],
+        ),
       ),
-      padding: const EdgeInsets.all(24),
-      child: const Column(
+    );
+  }
+
+  Widget _buildAlertCard({required IconData icon, required Color iconColor, required Color bgColor, required String title, required String message}) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('System Analysis', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF4C3E8A))),
-          SizedBox(height: 20),
-          Text('AI INSIGHT', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
-          SizedBox(height: 12),
-          Text(
-            'Live BLE telemetry indicates motion consistency is improving. Continue controlled flexion and extension cycles.',
-            style: TextStyle(color: Colors.black54, height: 1.5, fontSize: 14),
+          Icon(icon, color: iconColor, size: 24),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                const SizedBox(height: 4),
+                Text(message, style: const TextStyle(fontSize: 12, color: Colors.black54)),
+              ],
+            ),
           ),
         ],
       ),
     );
+  }
+
+  String _formatInt(int value) {
+    final source = value.abs().toString();
+    final buffer = StringBuffer();
+    for (var i = 0; i < source.length; i++) {
+      final indexFromEnd = source.length - i;
+      buffer.write(source[i]);
+      if (indexFromEnd > 1 && indexFromEnd % 3 == 1) {
+        buffer.write(',');
+      }
+    }
+    return value < 0 ? '-${buffer.toString()}' : buffer.toString();
   }
 }
 

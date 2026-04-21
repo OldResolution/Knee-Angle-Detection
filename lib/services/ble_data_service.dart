@@ -6,6 +6,69 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
 import '../models/knee_data_point.dart';
 
+enum SimulationPattern {
+  normalWalking,
+  limp,
+  shuffling,
+  stiffKnee,
+  exercise,
+  random,
+}
+
+extension SimulationPatternX on SimulationPattern {
+  String get key {
+    switch (this) {
+      case SimulationPattern.normalWalking:
+        return 'normalWalking';
+      case SimulationPattern.limp:
+        return 'limp';
+      case SimulationPattern.shuffling:
+        return 'shuffling';
+      case SimulationPattern.stiffKnee:
+        return 'stiffKnee';
+      case SimulationPattern.exercise:
+        return 'exercise';
+      case SimulationPattern.random:
+        return 'random';
+    }
+  }
+
+  String get displayName {
+    switch (this) {
+      case SimulationPattern.normalWalking:
+        return 'Normal Walking';
+      case SimulationPattern.limp:
+        return 'Limp';
+      case SimulationPattern.shuffling:
+        return 'Shuffling';
+      case SimulationPattern.stiffKnee:
+        return 'Stiff Knee';
+      case SimulationPattern.exercise:
+        return 'Exercise';
+      case SimulationPattern.random:
+        return 'Random';
+    }
+  }
+}
+
+SimulationPattern parseSimulationPattern(String? raw) {
+  switch ((raw ?? '').trim()) {
+    case 'normalWalking':
+      return SimulationPattern.normalWalking;
+    case 'limp':
+      return SimulationPattern.limp;
+    case 'shuffling':
+      return SimulationPattern.shuffling;
+    case 'stiffKnee':
+      return SimulationPattern.stiffKnee;
+    case 'exercise':
+      return SimulationPattern.exercise;
+    case 'random':
+    default:
+      return SimulationPattern.random;
+  }
+}
+
 class BleDataService {
   BleDataService({
     String serviceUuid = '0000FFE0-0000-1000-8000-00805F9B34FB',
@@ -25,8 +88,14 @@ class BleDataService {
   Timer? _simulationTimer;
 
   bool _simulationMode = false;
+  SimulationPattern _simulationPattern = SimulationPattern.random;
+  double _simulationSpeedMultiplier = 1.0;
   String _decodeBuffer = '';
   KneeDataPoint? _lastPoint;
+
+  SimulationPattern get simulationPattern => _simulationPattern;
+  double get simulationSpeedMultiplier => _simulationSpeedMultiplier;
+  double get simulationDataRateHz => 20.0 * _simulationSpeedMultiplier;
 
   Future<void> setSimulationMode(bool enabled) async {
     _simulationMode = enabled;
@@ -36,6 +105,14 @@ class BleDataService {
     } else {
       _stopSimulationStream();
     }
+  }
+
+  void setSimulationPattern(SimulationPattern pattern) {
+    _simulationPattern = pattern;
+  }
+
+  void setSimulationSpeedMultiplier(double multiplier) {
+    _simulationSpeedMultiplier = multiplier.clamp(0.5, 3.0).toDouble();
   }
 
   Future<void> startStreaming(BluetoothDevice device) async {
@@ -208,11 +285,11 @@ class BleDataService {
 
     _simulationTimer = Timer.periodic(const Duration(milliseconds: 50), (_) {
       final now = DateTime.now();
-      final elapsed = now.difference(sessionStart).inMilliseconds / 1000.0;
-      final base = 65 + 38 * sin(2 * pi * 0.45 * elapsed);
-      final harmonics = 6 * sin(2 * pi * 1.05 * elapsed);
-      final jitter = (random.nextDouble() - 0.5) * 3;
-      final angle = (base + harmonics + jitter).clamp(0, 140).toDouble();
+      final elapsed = (now.difference(sessionStart).inMilliseconds / 1000.0) * _simulationSpeedMultiplier;
+      final angle = _nextSimulatedAngle(
+        elapsed: elapsed,
+        random: random,
+      );
       final speed = _computeSpeed(angle, now);
       final activity = _inferActivity(angle: angle, speed: speed);
 
@@ -228,6 +305,41 @@ class BleDataService {
         _controller.add(point);
       }
     });
+  }
+
+  double _nextSimulatedAngle({
+    required double elapsed,
+    required Random random,
+  }) {
+    switch (_simulationPattern) {
+      case SimulationPattern.normalWalking:
+        return (65 + 30 * sin(2 * pi * 0.55 * elapsed) + 5 * sin(2 * pi * 1.1 * elapsed))
+            .clamp(30, 100)
+            .toDouble();
+      case SimulationPattern.limp:
+        final primary = 58 + 32 * sin(2 * pi * 0.42 * elapsed);
+        final asym = 16 * sin(2 * pi * 0.21 * elapsed + pi / 5);
+        final jitter = (random.nextDouble() - 0.5) * 8;
+        return (primary + asym + jitter).clamp(15, 120).toDouble();
+      case SimulationPattern.shuffling:
+        return (24 + 10 * sin(2 * pi * 1.3 * elapsed) + (random.nextDouble() - 0.5) * 3)
+            .clamp(10, 40)
+            .toDouble();
+      case SimulationPattern.stiffKnee:
+        return (40 + 16 * sin(2 * pi * 0.38 * elapsed) + (random.nextDouble() - 0.5) * 2)
+            .clamp(20, 60)
+            .toDouble();
+      case SimulationPattern.exercise:
+        final burst = (sin(2 * pi * 0.16 * elapsed) > 0.72) ? 22 : 0;
+        return (72 + 58 * sin(2 * pi * 0.75 * elapsed) + burst + (random.nextDouble() - 0.5) * 5)
+            .clamp(10, 140)
+            .toDouble();
+      case SimulationPattern.random:
+        final base = 65 + 38 * sin(2 * pi * 0.45 * elapsed);
+        final harmonics = 6 * sin(2 * pi * 1.05 * elapsed);
+        final jitter = (random.nextDouble() - 0.5) * 6;
+        return (base + harmonics + jitter).clamp(0, 140).toDouble();
+    }
   }
 
   void _stopSimulationStream() {

@@ -151,6 +151,9 @@ class BleController extends StateNotifier<BleState> {
   BleController({required bool initialSimulationMode})
       : super(BleState.initial(isSimulationMode: initialSimulationMode)) {
     _dataService = BleDataService();
+    _dataService.setSimulationPattern(
+      parseSimulationPattern(PreferencesService.simulationPattern),
+    );
     _service = BleService(
       initialSimulationMode: initialSimulationMode,
       onScanStateChanged: (scanState) {
@@ -173,6 +176,9 @@ class BleController extends StateNotifier<BleState> {
   late final BleDataService _dataService;
 
   Stream<KneeDataPoint> get dataStream => _dataService.stream;
+  SimulationPattern get simulationPattern => _dataService.simulationPattern;
+  double get simulationSpeedMultiplier => _dataService.simulationSpeedMultiplier;
+  double get simulationDataRateHz => _dataService.simulationDataRateHz;
 
   Future<void> startScan() => _service.startScan();
 
@@ -183,6 +189,15 @@ class BleController extends StateNotifier<BleState> {
   Future<void> disconnect() => _service.disconnect();
 
   Future<void> setSimulationMode(bool enabled) => _service.setSimulationMode(enabled);
+
+  Future<void> setSimulationPattern(SimulationPattern pattern) async {
+    await PreferencesService.setSimulationPattern(pattern.key);
+    _dataService.setSimulationPattern(pattern);
+  }
+
+  Future<void> setSimulationSpeedMultiplier(double multiplier) async {
+    _dataService.setSimulationSpeedMultiplier(multiplier);
+  }
 
   @override
   void dispose() {

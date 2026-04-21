@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/knee_alert.dart';
 import '../services/ble_providers.dart';
 import '../widgets/app_drawer.dart';
+import '../widgets/app_bottom_nav.dart';
 import '../widgets/app_top_nav.dart';
 import '../widgets/responsive/responsive_layout.dart';
 
@@ -18,6 +19,7 @@ class AlertSystemScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9FA),
       drawer: const AppDrawer(currentRoute: 'Alert System'),
+      bottomNavigationBar: const AppBottomNav(currentIndex: 0),
       body: Column(
         children: [
           const AppTopNav(),
@@ -27,58 +29,79 @@ class AlertSystemScreen extends ConsumerWidget {
                 horizontal: ResponsiveLayout.horizontalPadding(context),
                 vertical: ResponsiveLayout.verticalPadding(context),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+              child: ResponsiveLayout.constrainedPage(
+                context,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                   // ── Header Row ─────────────────────────────────
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final stackActions = constraints.maxWidth <= ResponsiveLayout.mobileMaxWidth;
+
+                        final titleBlock = Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Alert System',
+                                style: TextStyle(
+                                  fontSize: ResponsiveLayout.headlineSize(context),
+                                  fontWeight: FontWeight.bold,
+                                  color: const Color(0xFF4C3E8A),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                activeCount > 0
+                                    ? '$activeCount active alert${activeCount == 1 ? '' : 's'} - stay on top of your recovery.'
+                                    : 'All clear - no active alerts right now.',
+                                style: const TextStyle(fontSize: 16, color: Colors.black54),
+                              ),
+                            ],
+                          ),
+                        );
+
+                        final actions = alerts.isNotEmpty
+                            ? Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  _ActionChip(
+                                    icon: Icons.done_all,
+                                    label: 'Dismiss All',
+                                    onTap: () => ref.read(alertHistoryProvider.notifier).dismissAll(),
+                                  ),
+                                  _ActionChip(
+                                    icon: Icons.delete_sweep,
+                                    label: 'Clear',
+                                    onTap: () => ref.read(alertHistoryProvider.notifier).clear(),
+                                  ),
+                                ],
+                              )
+                            : const SizedBox.shrink();
+
+                        if (stackActions) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(children: [titleBlock]),
+                              if (alerts.isNotEmpty) const SizedBox(height: 12),
+                              if (alerts.isNotEmpty) actions,
+                            ],
+                          );
+                        }
+
+                        return Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'Alert System',
-                              style: TextStyle(
-                                fontSize: ResponsiveLayout.headlineSize(context),
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFF4C3E8A),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              activeCount > 0
-                                  ? '$activeCount active alert${activeCount == 1 ? '' : 's'} — stay on top of your recovery.'
-                                  : 'All clear — no active alerts right now.',
-                              style: const TextStyle(
-                                  fontSize: 16, color: Colors.black54),
-                            ),
+                            titleBlock,
+                            if (alerts.isNotEmpty) const SizedBox(width: 12),
+                            if (alerts.isNotEmpty) actions,
                           ],
-                        ),
-                      ),
-                      if (alerts.isNotEmpty)
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            _ActionChip(
-                              icon: Icons.done_all,
-                              label: 'Dismiss All',
-                              onTap: () => ref
-                                  .read(alertHistoryProvider.notifier)
-                                  .dismissAll(),
-                            ),
-                            const SizedBox(width: 8),
-                            _ActionChip(
-                              icon: Icons.delete_sweep,
-                              label: 'Clear',
-                              onTap: () => ref
-                                  .read(alertHistoryProvider.notifier)
-                                  .clear(),
-                            ),
-                          ],
-                        ),
-                    ],
-                  ),
+                        );
+                      },
+                    ),
                   const SizedBox(height: 32),
 
                   // ── Alert List / Empty State ───────────────────
@@ -97,7 +120,8 @@ class AlertSystemScreen extends ConsumerWidget {
                         ),
                       );
                     }),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

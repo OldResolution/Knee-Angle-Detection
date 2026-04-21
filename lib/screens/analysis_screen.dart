@@ -7,6 +7,7 @@ import '../services/ble_providers.dart';
 import '../services/gait_classification_service.dart';
 import '../services/ml_providers.dart';
 import '../widgets/app_drawer.dart';
+import '../widgets/app_bottom_nav.dart';
 import '../widgets/app_top_nav.dart';
 import '../widgets/responsive/responsive_layout.dart';
 
@@ -224,6 +225,7 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9FA),
       drawer: const AppDrawer(currentRoute: 'Analysis'),
+      bottomNavigationBar: const AppBottomNav(currentIndex: 0),
       body: Column(
         children: [
           const AppTopNav(),
@@ -233,9 +235,11 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                 horizontal: ResponsiveLayout.horizontalPadding(context),
                 vertical: ResponsiveLayout.verticalPadding(context),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+              child: ResponsiveLayout.constrainedPage(
+                context,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                   Text(
                     'Performance & Analysis',
                     style: TextStyle(
@@ -278,7 +282,8 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                   ),
                   const SizedBox(height: 32),
                   _buildMLPredictionCard(prediction, modelAsync, history.length),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -349,15 +354,23 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            runSpacing: 12,
+            spacing: 12,
             children: [
-              const Expanded(child: Text('Historical Flexion Trajectory', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF4C3E8A)))),
+              const SizedBox(
+                width: 320,
+                child: Text(
+                  'Historical Flexion Trajectory',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF4C3E8A)),
+                ),
+              ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24)),
                 child: const Text('Past 30 Days', style: TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF4C3E8A))),
-              )
+              ),
             ],
           ),
           const SizedBox(height: 48),
@@ -426,21 +439,20 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header row
-          Row(
+          Wrap(
+            runSpacing: 12,
+            spacing: 12,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               const Icon(Icons.psychology, color: Color(0xFF4C3E8A), size: 28),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Text('AI Gait Assessment',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87)),
+              const Text(
+                'AI Gait Assessment',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
               ),
-              // Model status chip
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: isModelReady
-                      ? const Color(0xFFD6EAD8)
-                      : const Color(0xFFFFF8E1),
+                  color: isModelReady ? const Color(0xFFD6EAD8) : const Color(0xFFFFF8E1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
@@ -481,7 +493,9 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
           const SizedBox(height: 24),
 
           // Action buttons
-          Row(
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
             children: [
               ElevatedButton.icon(
                 onPressed: (isModelReady && !_isAnalysing && sampleCount >= 10) ? _runGaitAnalysis : null,
@@ -496,7 +510,6 @@ class _AnalysisScreenState extends ConsumerState<AnalysisScreen> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
-              const SizedBox(width: 12),
               if (prediction != null)
                 OutlinedButton.icon(
                   onPressed: () {},

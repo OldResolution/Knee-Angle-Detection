@@ -3,10 +3,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../widgets/app_drawer.dart';
+import '../widgets/app_bottom_nav.dart';
 import '../widgets/app_top_nav.dart';
 import '../services/preferences_service.dart';
 import '../services/ble_providers.dart';
+import '../services/ble_data_service.dart';
+import '../services/goals_providers.dart';
 import '../services/knee_analysis_service.dart';
+import '../services/storage_service.dart';
 import 'device_connectivity_screen.dart';
 import '../widgets/responsive/responsive_layout.dart';
 
@@ -21,12 +25,17 @@ class SettingsScreen extends ConsumerStatefulWidget {
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   String _selectedTab = 'Account Preferences';
   bool _simMode = true;
+  SimulationPattern _simulationPattern = SimulationPattern.random;
+  double _simulationSpeed = 1.0;
 
   // AI & Alerts local state (synced from prefs on init)
   double _maxAngle = 140.0;
   double _minAngle = 5.0;
   double _suddenMovement = 200.0;
   bool _alertsEnabled = true;
+  int _dailyStepGoal = 8000;
+  int _exerciseMinutesGoal = 30;
+  double _activeHoursGoal = 6.0;
 
   @override
   void initState() {
@@ -36,6 +45,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _minAngle = PreferencesService.minAngleThreshold;
     _suddenMovement = PreferencesService.suddenMovementThreshold;
     _alertsEnabled = PreferencesService.alertsEnabled;
+    _dailyStepGoal = PreferencesService.dailyStepGoal;
+    _exerciseMinutesGoal = PreferencesService.exerciseMinutesGoal;
+    _activeHoursGoal = PreferencesService.activeHoursGoal;
+    _simulationPattern = parseSimulationPattern(PreferencesService.simulationPattern);
+    _simulationSpeed = ref.read(bleControllerProvider.notifier).simulationSpeedMultiplier;
   }
 
   void _onTabSelected(String tab) {
@@ -49,6 +63,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFFAF9FB),
       drawer: const AppDrawer(currentRoute: 'Settings'),
+      bottomNavigationBar: const AppBottomNav(currentIndex: 1),
       body: Column(
         children: [
           const AppTopNav(),
@@ -134,6 +149,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           _buildSidebarItem('Account Preferences', Icons.person),
           _buildSidebarItem('Data Sync', Icons.sync),
           _buildSidebarItem('Notifications', Icons.notifications),
+          _buildSidebarItem('Goals & Targets', Icons.flag),
           _buildSidebarItem('System Calibration', Icons.monitor_weight_outlined),
           _buildSidebarItem('AI & Alerts', Icons.psychology),
           const Spacer(),
@@ -189,6 +205,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const SizedBox(width: 8),
             _buildMobileChip('Notifications'),
             const SizedBox(width: 8),
+            _buildMobileChip('Goals & Targets'),
+            const SizedBox(width: 8),
             _buildMobileChip('System Calibration'),
             const SizedBox(width: 8),
             _buildMobileChip('AI & Alerts'),
@@ -211,6 +229,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Widget _buildActiveContent() {
     switch (_selectedTab) {
+      case 'Data Sync':
+        return _buildDataSyncOnlyContent();
+      case 'Notifications':
+        return _buildNotificationsOnlyContent();
+      case 'Goals & Targets':
+        return _buildGoalsTargetsContent();
       case 'System Calibration':
         return _buildLegacySettings();
       case 'AI & Alerts':
@@ -406,7 +430,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: () {},
+              onPressed: () async {
+                await ref.read(storageServiceProvider).clearAllData();
+                if (!mounted) {
+                  return;
+                }
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Local session and daily log cache cleared.'),
+                  ),
+                );
+              },
               icon: const Icon(Icons.delete_outline, size: 18),
               label: const Text('Clear Local Cache'),
               style: OutlinedButton.styleFrom(
@@ -456,6 +490,170 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildDataSyncOnlyContent() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Data Synchronization',
+          style: TextStyle(fontSize: ResponsiveLayout.headlineSize(context), fontWeight: FontWeight.bold, color: Colors.black87),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Control data sync behavior and local storage maintenance.',
+          style: TextStyle(color: Colors.black54, fontSize: 16),
+        ),
+        const SizedBox(height: 28),
+        _buildDataSyncCard(),
+      ],
+    );
+  }
+
+  Widget _buildNotificationsOnlyContent() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Notifications',
+          style: TextStyle(fontSize: ResponsiveLayout.headlineSize(context), fontWeight: FontWeight.bold, color: Colors.black87),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Choose which in-app updates and milestones are surfaced.',
+          style: TextStyle(color: Colors.black54, fontSize: 16),
+        ),
+        const SizedBox(height: 28),
+        _buildAlertPreferencesCard(),
+      ],
+    );
+  }
+
+  Widget _buildGoalsTargetsContent() {
+    final goalsNotifier = ref.read(userGoalsProvider.notifier);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Goals & Targets',
+          style: TextStyle(fontSize: ResponsiveLayout.headlineSize(context), fontWeight: FontWeight.bold, color: Colors.black87),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Define personalized daily goals for steps, exercise, and active wear time.',
+          style: TextStyle(color: Colors.black54, fontSize: 16),
+        ),
+        const SizedBox(height: 28),
+        _buildMockupCard(
+          title: 'Daily Step Goal',
+          icon: Icons.directions_walk,
+          child: _buildGoalStepper(
+            value: _dailyStepGoal,
+            unitLabel: 'steps',
+            step: 500,
+            min: 1000,
+            max: 20000,
+            onChanged: (next) {
+              setState(() => _dailyStepGoal = next);
+              unawaited(goalsNotifier.setDailyStepGoal(next));
+            },
+          ),
+        ),
+        const SizedBox(height: 20),
+        _buildMockupCard(
+          title: 'Exercise Minutes Goal',
+          icon: Icons.fitness_center,
+          child: _buildGoalStepper(
+            value: _exerciseMinutesGoal,
+            unitLabel: 'minutes',
+            step: 5,
+            min: 5,
+            max: 120,
+            onChanged: (next) {
+              setState(() => _exerciseMinutesGoal = next);
+              unawaited(goalsNotifier.setExerciseMinutesGoal(next));
+            },
+          ),
+        ),
+        const SizedBox(height: 20),
+        _buildMockupCard(
+          title: 'Active Hours Goal',
+          icon: Icons.schedule,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Slider(
+                      value: _activeHoursGoal,
+                      min: 1,
+                      max: 12,
+                      divisions: 22,
+                      activeColor: const Color(0xFF5A4D9A),
+                      label: '${_activeHoursGoal.toStringAsFixed(1)} h',
+                      onChanged: (val) {
+                        setState(() => _activeHoursGoal = val);
+                        unawaited(goalsNotifier.setActiveHoursGoal(val));
+                      },
+                    ),
+                  ),
+                  SizedBox(
+                    width: 64,
+                    child: Text(
+                      '${_activeHoursGoal.toStringAsFixed(1)} h',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGoalStepper({
+    required int value,
+    required String unitLabel,
+    required int step,
+    required int min,
+    required int max,
+    required ValueChanged<int> onChanged,
+  }) {
+    final canDecrement = value > min;
+    final canIncrement = value < max;
+
+    return Row(
+      children: [
+        IconButton(
+          onPressed: canDecrement ? () => onChanged((value - step).clamp(min, max)) : null,
+          icon: const Icon(Icons.remove_circle_outline),
+        ),
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              '$value $unitLabel',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ),
+        IconButton(
+          onPressed: canIncrement ? () => onChanged((value + step).clamp(min, max)) : null,
+          icon: const Icon(Icons.add_circle_outline),
+        ),
+      ],
     );
   }
 
@@ -516,6 +714,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   unawaited(ref.read(bleControllerProvider.notifier).setSimulationMode(val));
                 },
               ),
+              if (_simMode) ...[
+                const Divider(height: 1),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                  child: _buildSimulationControlPanel(),
+                ),
+              ],
               const Divider(height: 1),
               ListTile(
                 leading: const Icon(Icons.monitor_weight_outlined, color: Color(0xFF4C3E8A)),
@@ -533,6 +738,79 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 onTap: () {},
               ),
             ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSimulationControlPanel() {
+    final controller = ref.read(bleControllerProvider.notifier);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Simulation Pattern',
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 10),
+        DropdownButtonFormField<SimulationPattern>(
+          initialValue: _simulationPattern,
+          items: SimulationPattern.values
+              .map(
+                (pattern) => DropdownMenuItem<SimulationPattern>(
+                  value: pattern,
+                  child: Text(pattern.displayName),
+                ),
+              )
+              .toList(),
+          onChanged: (value) {
+            if (value == null) {
+              return;
+            }
+            setState(() => _simulationPattern = value);
+            unawaited(controller.setSimulationPattern(value));
+          },
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            const Expanded(
+              child: Text(
+                'Speed Multiplier',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+            Text(
+              '${_simulationSpeed.toStringAsFixed(1)}x',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        Slider(
+          value: _simulationSpeed,
+          min: 0.5,
+          max: 3.0,
+          divisions: 25,
+          activeColor: const Color(0xFF5A4D9A),
+          label: '${_simulationSpeed.toStringAsFixed(1)}x',
+          onChanged: (value) {
+            setState(() => _simulationSpeed = value);
+            unawaited(controller.setSimulationSpeedMultiplier(value));
+          },
+        ),
+        const SizedBox(height: 6),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFEDE9F5),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Text(
+            'Status: ${_simulationPattern.displayName} | ${controller.simulationDataRateHz.toStringAsFixed(1)} Hz',
+            style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF4C3E8A)),
           ),
         ),
       ],

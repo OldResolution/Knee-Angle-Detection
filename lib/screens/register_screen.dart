@@ -1,6 +1,8 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../widgets/primary_button.dart';
+import '../widgets/responsive/responsive_layout.dart';
 import 'home_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -75,16 +77,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Form(
-              key: _formKey,
-              child: Column(
+            padding: EdgeInsets.symmetric(
+              horizontal: ResponsiveLayout.horizontalPadding(context),
+              vertical: ResponsiveLayout.verticalPadding(context),
+            ),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 460),
+              child: Form(
+                key: _formKey,
+                child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Title
                   Icon(
-                    Icons.person_add_outlined,
+                    Icons.person_add_alt_1_outlined,
                     size: 80,
                     color: Theme.of(context).colorScheme.primary,
                   ),
@@ -93,6 +100,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     'Create Account',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
                           fontWeight: FontWeight.bold,
                         ),
                   ),
@@ -101,7 +109,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     'Sign up to get started',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Colors.grey,
+                          color: Colors.black87,
                         ),
                   ),
                   const SizedBox(height: 40),
@@ -134,7 +142,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ],
                     decoration: const InputDecoration(
                       hintText: 'Age',
-                      prefixIcon: Icon(Icons.cake_outlined),
+                      prefixIcon: Icon(Icons.badge_outlined),
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -154,7 +162,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     initialValue: _selectedGender,
                     decoration: const InputDecoration(
                       hintText: 'Gender',
-                      prefixIcon: Icon(Icons.wc_outlined),
+                      prefixIcon: Icon(Icons.people_outline),
                     ),
                     items: const [
                       DropdownMenuItem(value: 'Male', child: Text('Male')),
@@ -283,27 +291,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   const SizedBox(height: 24),
 
                   // Register Button
-                  FilledButton(
-                    onPressed: _isLoading ? null : _register,
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: _isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Text(
-                            'Register',
-                            style: TextStyle(fontSize: 16),
-                          ),
+                  PrimaryButton(
+                    text: 'Register',
+                    isLoading: _isLoading,
+                    onPressed: _register,
                   ),
                   const SizedBox(height: 24),
 
@@ -326,6 +317,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   const SizedBox(height: 24),
                 ],
+                ),
               ),
             ),
           ),
