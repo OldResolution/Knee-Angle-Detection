@@ -172,7 +172,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget _buildLiveChartCard(BuildContext context, KneeDataPoint? current,
       List<KneeDataPoint> history, bool liveActive) {
     // Only process the visible window of points for performance
-    final visibleCount = 100;
+    const visibleCount = 100;
     final startIndex = max(0, history.length - visibleCount);
     final visiblePoints = history.skip(startIndex).toList();
 
@@ -457,7 +457,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             Text(
               insights.aiInsight,
               style:
-                  TextStyle(color: Colors.black87, height: 1.5, fontSize: 14),
+                  const TextStyle(color: Colors.black87, height: 1.5, fontSize: 14),
             ),
             const SizedBox(height: 16),
             SizedBox(

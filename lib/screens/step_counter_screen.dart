@@ -54,7 +54,7 @@ class StepCounterScreen extends ConsumerWidget {
                         ],
                       );
 
-                      final avatar = const CircleAvatar(
+                      const avatar = CircleAvatar(
                         radius: 20,
                         backgroundColor: Color(0xFFE2E2E6),
                         child: Icon(Icons.person, color: Colors.black87),

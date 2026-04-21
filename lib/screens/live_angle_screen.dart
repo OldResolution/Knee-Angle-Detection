@@ -105,15 +105,15 @@ class _LiveAngleScreenState extends ConsumerState<LiveAngleScreen>
             title: metrics.extensionTitle,
             subtitle: metrics.extensionSubtitle,
             icon: Icons.check_circle,
-            iconColor: Color(0xFF4C3E8A),
-            bgColor: Color(0xFFE2DCEC),
+            iconColor: const Color(0xFF4C3E8A),
+            bgColor: const Color(0xFFE2DCEC),
           ),
           _BottomMetricCard(
             title: 'Smoothness Score: ${metrics.smoothnessScore}',
             subtitle: metrics.smoothnessSubtitle,
             icon: Icons.water_drop,
-            iconColor: Color(0xFFF9A825),
-            bgColor: Color(0xFFFFF59D),
+            iconColor: const Color(0xFFF9A825),
+            bgColor: const Color(0xFFFFF59D),
           ),
         ];
 

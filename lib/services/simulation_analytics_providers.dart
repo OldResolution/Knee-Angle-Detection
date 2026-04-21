@@ -1,10 +1,8 @@
 import 'dart:math' as math;
 
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/daily_log.dart';
-import '../models/knee_alert.dart';
 import '../models/knee_data_point.dart';
 import '../models/session_record.dart';
 import '../models/user_goals.dart';
