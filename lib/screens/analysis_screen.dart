@@ -135,7 +135,7 @@ class AnalysisScreen extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(child: const Text('Historical Flexion Trajectory', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF4C3E8A)))),
+              const Expanded(child: Text('Historical Flexion Trajectory', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF4C3E8A)))),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24)),
@@ -148,8 +148,8 @@ class AnalysisScreen extends StatelessWidget {
             height: 250,
             child: LineChart(
               LineChartData(
-                gridData: FlGridData(show: false),
-                titlesData: FlTitlesData(
+                gridData: const FlGridData(show: false),
+                titlesData: const FlTitlesData(
                   bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
                   leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
                   rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -168,7 +168,7 @@ class AnalysisScreen extends StatelessWidget {
                     color: const Color(0xFF5A4D9A),
                     barWidth: 5,
                     isStrokeCapRound: true,
-                    dotData: FlDotData(show: false),
+                    dotData: const FlDotData(show: false),
                     belowBarData: BarAreaData(
                       show: true,
                       gradient: LinearGradient(
@@ -200,8 +200,8 @@ class AnalysisScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: const [
+          const Row(
+            children: [
               Icon(Icons.psychology, color: Color(0xFF4C3E8A), size: 28),
               SizedBox(width: 12),
               Expanded(child: Text('AI Kinetic Assessment', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87))),

@@ -8,13 +8,13 @@ class AppFooter extends StatelessWidget {
     return Container(
       color: const Color(0xFFEEEEF0),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-      child: Wrap(
+      child: const Wrap(
         alignment: WrapAlignment.center,
         crossAxisAlignment: WrapCrossAlignment.center,
         spacing: 24,
         runSpacing: 16,
         children: [
-          const Text(
+          Text(
             'The Kinetic Sanctuary',
             style: TextStyle(
               color: Color(0xFF4C3E8A),
@@ -22,7 +22,7 @@ class AppFooter extends StatelessWidget {
               fontSize: 16,
             ),
           ),
-          const Text(
+          Text(
             '\u00A9 2024 The Kinetic Sanctuary. Clinical precision meets human-centric care.',
             style: TextStyle(color: Colors.black54, fontSize: 13),
             textAlign: TextAlign.center,
@@ -31,7 +31,7 @@ class AppFooter extends StatelessWidget {
             spacing: 16,
             runSpacing: 8,
             alignment: WrapAlignment.center,
-            children: const [
+            children: [
               Text('Help Center', style: TextStyle(color: Colors.black54, fontSize: 13)),
               Text('Privacy Policy', style: TextStyle(color: Colors.black54, fontSize: 13)),
               Text('Settings', style: TextStyle(color: Colors.black54, fontSize: 13)),

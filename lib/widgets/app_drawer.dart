@@ -68,10 +68,10 @@ class _AppDrawerState extends State<AppDrawer> {
                     child: const Icon(Icons.accessibility_new, color: Colors.white, size: 24),
                   ),
                   const SizedBox(width: 16),
-                  Expanded(
+                  const Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
+                      children: [
                         Text(
                           'The Kinetic\nSanctuary',
                           style: TextStyle(

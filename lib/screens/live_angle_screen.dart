@@ -89,7 +89,7 @@ class LiveAngleScreen extends StatelessWidget {
         spacing: 48,
         runSpacing: 32,
         children: [
-          SizedBox(
+          const SizedBox(
             width: 140,
             height: 140,
             child: Stack(
@@ -98,13 +98,13 @@ class LiveAngleScreen extends StatelessWidget {
                 CircularProgressIndicator(
                   value: 112 / 120,
                   strokeWidth: 12,
-                  backgroundColor: const Color(0xFFDCDAF0),
-                  color: const Color(0xFF5A4D9A),
+                  backgroundColor: Color(0xFFDCDAF0),
+                  color: Color(0xFF5A4D9A),
                 ),
                 Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
+                    children: [
                       Text(
                         '112\u00B0',
                         style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.black87),
@@ -131,9 +131,9 @@ class LiveAngleScreen extends StatelessWidget {
                     color: const Color(0xFFD6CFF0),
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: Row(
+                  child: const Row(
                     mainAxisSize: MainAxisSize.min,
-                    children: const [
+                    children: [
                       Icon(Icons.check, size: 14, color: Color(0xFF5A4D9A)),
                       SizedBox(width: 6),
                       Text('Optimal Range Detected', style: TextStyle(fontSize: 12, color: Color(0xFF5A4D9A), fontWeight: FontWeight.bold)),

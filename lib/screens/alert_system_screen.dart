@@ -116,11 +116,11 @@ class AlertSystemScreen extends StatelessWidget {
                 const SizedBox(height: 12),
                 Text(message, style: const TextStyle(height: 1.5, color: Colors.black54, fontSize: 14)),
                 const SizedBox(height: 16),
-                Row(
+                const Row(
                   children: [
-                    const Text('View Details', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF4C3E8A), fontSize: 13)),
-                    const SizedBox(width: 4),
-                    const Icon(Icons.arrow_forward_ios, size: 12, color: Color(0xFF4C3E8A)),
+                    Text('View Details', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF4C3E8A), fontSize: 13)),
+                    SizedBox(width: 4),
+                    Icon(Icons.arrow_forward_ios, size: 12, color: Color(0xFF4C3E8A)),
                   ],
                 )
               ],

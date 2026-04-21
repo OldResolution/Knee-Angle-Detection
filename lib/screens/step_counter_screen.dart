@@ -24,10 +24,10 @@ class StepCounterScreen extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Expanded(
+                      const Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
+                          children: [
                             Text(
                               'Daily Motion',
                               style: TextStyle(
@@ -51,8 +51,8 @@ class StepCounterScreen extends StatelessWidget {
                           color: const Color(0xFFF5F4F7),
                           borderRadius: BorderRadius.circular(24),
                         ),
-                        child: Row(
-                          children: const [
+                        child: const Row(
+                          children: [
                             Icon(Icons.calendar_today, size: 16, color: Color(0xFF4C3E8A)),
                             SizedBox(width: 8),
                             Text('Today', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF4C3E8A))),
@@ -118,10 +118,10 @@ class StepCounterScreen extends StatelessWidget {
                 const SizedBox(height: 8),
                 const Text('You\'re making excellent progress today.', style: TextStyle(color: Colors.black54)),
                 const SizedBox(height: 32),
-                Row(
+                const Row(
                   crossAxisAlignment: CrossAxisAlignment.baseline,
                   textBaseline: TextBaseline.alphabetic,
-                  children: const [
+                  children: [
                     Text('6,432', style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold, color: Color(0xFF4C3E8A))),
                     SizedBox(width: 8),
                     Text('/ 8,000', style: TextStyle(fontSize: 18, color: Colors.black54)),
@@ -134,9 +134,9 @@ class StepCounterScreen extends StatelessWidget {
                     color: const Color(0xFFE2DCEC),
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: Row(
+                  child: const Row(
                     mainAxisSize: MainAxisSize.min,
-                    children: const [
+                    children: [
                       Icon(Icons.local_fire_department, size: 16, color: Color(0xFF819230)),
                       SizedBox(width: 8),
                       Text('320 kcal burned', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
@@ -146,7 +146,7 @@ class StepCounterScreen extends StatelessWidget {
               ],
             ),
           ),
-          SizedBox(
+          const SizedBox(
             width: 180,
             height: 180,
             child: Stack(
@@ -155,13 +155,13 @@ class StepCounterScreen extends StatelessWidget {
                 CircularProgressIndicator(
                   value: 0.8,
                   strokeWidth: 20,
-                  backgroundColor: const Color(0xFFEFEFFB),
-                  color: const Color(0xFF4C3E8A),
+                  backgroundColor: Color(0xFFEFEFFB),
+                  color: Color(0xFF4C3E8A),
                 ),
                 Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
+                    children: [
                       Icon(Icons.directions_walk, color: Color(0xFF4C3E8A), size: 32),
                       SizedBox(height: 8),
                       Text('80%', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87)),
@@ -204,10 +204,10 @@ class StepCounterScreen extends StatelessWidget {
           const SizedBox(height: 24),
           const Text('Total active hours wearing the kinetic cap today.', style: TextStyle(color: Colors.black54)),
           const SizedBox(height: 24),
-          Row(
+          const Row(
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
-            children: const [
+            children: [
               Text('4', style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.black87)),
               Text('h ', style: TextStyle(fontSize: 20, color: Colors.black87)),
               Text('15', style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.black87)),
@@ -225,9 +225,9 @@ class StepCounterScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          Row(
+          const Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
+            children: [
               Text('Target: 6 hours', style: TextStyle(fontSize: 12, color: Colors.black54)),
               Text('1h 45m remaining', style: TextStyle(fontSize: 12, color: Colors.black87, fontWeight: FontWeight.w600)),
             ],
@@ -250,10 +250,10 @@ class StepCounterScreen extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
+              const Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
+                  children: [
                     Text('Hourly Activity', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87)),
                     SizedBox(height: 8),
                     Text('Step distribution throughout the day', style: TextStyle(color: Colors.black54), overflow: TextOverflow.visible),
@@ -294,7 +294,7 @@ class StepCounterScreen extends StatelessWidget {
               BarChartData(
                 alignment: BarChartAlignment.spaceAround,
                 maxY: 100,
-                barTouchData: BarTouchData(enabled: false),
+                barTouchData: const BarTouchData(enabled: false),
                 titlesData: FlTitlesData(
                   show: true,
                   bottomTitles: AxisTitles(
@@ -316,11 +316,11 @@ class StepCounterScreen extends StatelessWidget {
                       },
                     ),
                   ),
-                  leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                 ),
-                gridData: FlGridData(show: false),
+                gridData: const FlGridData(show: false),
                 borderData: FlBorderData(show: false),
                 barGroups: [
                   _makeGroupData(0, 10, isLight: true),

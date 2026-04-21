@@ -83,9 +83,9 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildHeader() {
-    return Column(
+    return const Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: const [
+      children: [
         Text(
           'Knee Health Dashboard',
           style: TextStyle(
@@ -156,12 +156,12 @@ class HomeScreen extends StatelessWidget {
                   ],
                 ),
               ),
-              Column(
+              const Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
+                    children: [
                       Text(
                         '45',
                         style: TextStyle(
@@ -181,8 +181,8 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
-                  const Text(
+                  SizedBox(height: 4),
+                  Text(
                     'CURRENT FLEXION',
                     style: TextStyle(
                       fontSize: 10,
@@ -200,7 +200,7 @@ class HomeScreen extends StatelessWidget {
             height: 200,
             child: LineChart(
               LineChartData(
-                gridData: FlGridData(show: false),
+                gridData: const FlGridData(show: false),
                 titlesData: FlTitlesData(
                   leftTitles: AxisTitles(
                     sideTitles: SideTitles(
@@ -234,8 +234,8 @@ class HomeScreen extends StatelessWidget {
                       interval: 3,
                     ),
                   ),
-                  rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                 ),
                 borderData: FlBorderData(show: false),
                 minX: 0,
@@ -258,7 +258,7 @@ class HomeScreen extends StatelessWidget {
                     color: const Color(0xFF6750A4),
                     barWidth: 4,
                     isStrokeCapRound: true,
-                    dotData: FlDotData(show: false),
+                    dotData: const FlDotData(show: false),
                     belowBarData: BarAreaData(
                       show: true,
                       gradient: LinearGradient(
@@ -301,8 +301,8 @@ class HomeScreen extends StatelessWidget {
                 child: const Icon(Icons.directions_walk, color: Color(0xFF4C3E8A)),
               ),
               const SizedBox(width: 16),
-              Expanded(
-                child: const Text(
+              const Expanded(
+                child: Text(
                   'Total Steps',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   overflow: TextOverflow.ellipsis,
@@ -311,10 +311,10 @@ class HomeScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 24),
-          Row(
+          const Row(
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
-            children: const [
+            children: [
               Text(
                 '4,285',
                 style: TextStyle(
@@ -366,8 +366,8 @@ class HomeScreen extends StatelessWidget {
                 child: const Icon(Icons.access_time_filled, color: Color(0xFF6F701B)),
               ),
               const SizedBox(width: 16),
-              Expanded(
-                child: const Text(
+              const Expanded(
+                child: Text(
                   'Active Wear Hours',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   overflow: TextOverflow.ellipsis,
@@ -376,10 +376,10 @@ class HomeScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 24),
-          Row(
+          const Row(
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
-            children: const [
+            children: [
               Text(
                 '6.5',
                 style: TextStyle(
@@ -436,15 +436,15 @@ class HomeScreen extends StatelessWidget {
               color: Colors.white,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Row(
+            child: const Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.warning_amber_rounded, color: Color(0xFF819230)),
-                const SizedBox(width: 16),
+                Icon(Icons.warning_amber_rounded, color: Color(0xFF819230)),
+                SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
+                    children: [
                       Text(
                         'Prolonged Inactivity',
                         style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
@@ -468,15 +468,15 @@ class HomeScreen extends StatelessWidget {
               color: Colors.white,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Row(
+            child: const Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.check_circle, color: Color(0xFF4C3E8A)),
-                const SizedBox(width: 16),
+                Icon(Icons.check_circle, color: Color(0xFF4C3E8A)),
+                SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
+                    children: [
                       Text(
                         'Extension Target Met',
                         style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),

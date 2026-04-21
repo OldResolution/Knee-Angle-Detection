@@ -128,9 +128,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildHeader() {
-    return Column(
+    return const Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: const [
+      children: [
         Text(
           'Profile Overview',
           style: TextStyle(
@@ -210,9 +210,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               color: const Color(0xFFEBE8F6),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: Row(
+            child: const Row(
               mainAxisSize: MainAxisSize.min,
-              children: const [
+              children: [
                 Icon(Icons.circle, size: 10, color: Color(0xFF6750A4)),
                 SizedBox(width: 8),
                 Text(
@@ -308,10 +308,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
+              const Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
+                  children: [
                     Text(
                       'Personal Information',
                       style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -399,8 +399,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             style: TextStyle(color: Colors.black54),
           ),
           const SizedBox(height: 32),
-          Row(
-            children: const [
+          const Row(
+            children: [
               Icon(Icons.notifications_active, color: Color(0xFF4C3E8A), size: 20),
               SizedBox(width: 12),
               Text(
@@ -427,8 +427,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
           const SizedBox(height: 32),
-          Row(
-            children: const [
+          const Row(
+            children: [
               Icon(Icons.security, color: Color(0xFF4C3E8A), size: 20),
               SizedBox(width: 12),
               Text(
@@ -473,7 +473,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Switch(
           value: initialValue,
           onChanged: (val) {},
-          activeColor: Colors.white,
+          activeThumbColor: Colors.white,
           activeTrackColor: const Color(0xFF4C3E8A),
         ),
       ],
@@ -490,8 +490,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: const [
+          const Row(
+            children: [
               Icon(Icons.warning_amber_rounded, color: Colors.red, size: 24),
               SizedBox(width: 12),
               Text(
