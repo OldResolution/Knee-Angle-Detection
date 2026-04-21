@@ -1,0 +1,17 @@
+// Flex Sensor Test Code
+
+int flexPin = A0; // Analog Input pin for the Flex Sensor
+int sensorValue = 0;
+
+void setup() {
+  Serial.begin(9600); // Start serial communication
+}
+
+void loop() {
+  sensorValue = analogRead(flexPin); // Read the sensor value (0-1023)
+  
+  Serial.print("Flex Sensor Value: ");
+  Serial.println(sensorValue);
+
+  delay(200); // Delay for readability
+}

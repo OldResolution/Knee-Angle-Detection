@@ -1,14 +1,24 @@
-import 'package:flutter/material.dart';
+import 'dart:math';
+
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../models/knee_data_point.dart';
+import '../services/ble_providers.dart';
 import '../widgets/app_drawer.dart';
 import '../widgets/app_top_nav.dart';
 import '../widgets/responsive/responsive_layout.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final current = ref.watch(currentKneeDataProvider);
+    final history = ref.watch(kneeDataHistoryProvider);
+    final liveActive = ref.watch(isLiveDataActiveProvider);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9FA),
       drawer: const AppDrawer(currentRoute: 'Dashboard'),
@@ -36,43 +46,35 @@ class HomeScreen extends StatelessWidget {
                               flex: 6,
                               child: Column(
                                 children: [
-                                  _buildLiveChartCard(context),
+                                  _buildLiveChartCard(context, current, history, liveActive),
                                   const SizedBox(height: 24),
                                   Row(
                                     children: [
-                                      Expanded(child: _buildTotalStepsCard(context)),
+                                      Expanded(child: _buildStatCard('Total Steps', '4,285 / 6,000 goal', Icons.directions_walk, const Color(0xFFD6CFF0))),
                                       const SizedBox(width: 24),
-                                      Expanded(child: _buildActiveWearHoursCard(context)),
+                                      Expanded(child: _buildStatCard('Active Wear Hours', '6.5 hrs today', Icons.access_time_filled, const Color(0xFFE5E0CB))),
                                     ],
                                   ),
                                 ],
                               ),
                             ),
                             const SizedBox(width: 32),
-                            Expanded(
-                              flex: 3,
-                              child: _buildSystemAnalysisPanel(context),
-                            ),
-                          ],
-                        );
-                      } else {
-                        return Column(
-                          children: [
-                            _buildLiveChartCard(context),
-                            const SizedBox(height: 24),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                _buildTotalStepsCard(context),
-                                const SizedBox(height: 24),
-                                _buildActiveWearHoursCard(context),
-                              ],
-                            ),
-                            const SizedBox(height: 32),
-                            _buildSystemAnalysisPanel(context),
+                            Expanded(flex: 3, child: _buildSystemAnalysisPanel()),
                           ],
                         );
                       }
+
+                      return Column(
+                        children: [
+                          _buildLiveChartCard(context, current, history, liveActive),
+                          const SizedBox(height: 24),
+                          _buildStatCard('Total Steps', '4,285 / 6,000 goal', Icons.directions_walk, const Color(0xFFD6CFF0)),
+                          const SizedBox(height: 24),
+                          _buildStatCard('Active Wear Hours', '6.5 hrs today', Icons.access_time_filled, const Color(0xFFE5E0CB)),
+                          const SizedBox(height: 32),
+                          _buildSystemAnalysisPanel(),
+                        ],
+                      );
                     },
                   ),
                 ],
@@ -99,22 +101,28 @@ class HomeScreen extends StatelessWidget {
         const SizedBox(height: 8),
         const Text(
           'Real-time metrics and recovery insights.',
-          style: TextStyle(
-            fontSize: 16,
-            color: Colors.black54,
-          ),
+          style: TextStyle(fontSize: 16, color: Colors.black54),
         ),
       ],
     );
   }
 
-  Widget _buildLiveChartCard(BuildContext context) {
+  Widget _buildLiveChartCard(BuildContext context, KneeDataPoint? current, List<KneeDataPoint> history, bool liveActive) {
+    final points = history;
+    final spots = <FlSpot>[];
+    for (var i = 0; i < points.length; i++) {
+      spots.add(FlSpot(i.toDouble(), points[i].angle));
+    }
+
+    final currentAngle = current?.angle ?? (history.isNotEmpty ? history.last.angle : 0.0);
+    final maxX = points.isEmpty ? 60.0 : max(60.0, points.length.toDouble());
+
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFFF5F4F7),
         borderRadius: BorderRadius.circular(16),
       ),
-      padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -128,145 +136,92 @@ class HomeScreen extends StatelessWidget {
                   children: [
                     const Text(
                       'Live Knee Angle',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
                     ),
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF819230),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
+                        _PulseDot(active: liveActive),
                         const SizedBox(width: 8),
-                        const Expanded(
-                          child: Text(
-                            'Streaming Data Active',
-                            style: TextStyle(color: Colors.black54, fontSize: 13),
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                        Text(
+                          liveActive ? 'Streaming Data Active' : 'Waiting for stream',
+                          style: const TextStyle(color: Colors.black54, fontSize: 13),
                         ),
                       ],
                     ),
                   ],
                 ),
               ),
-              const Column(
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '45',
-                        style: TextStyle(
-                          fontSize: 48,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF4C3E8A),
-                          height: 1,
-                        ),
-                      ),
-                      Text(
-                        'Â°',
-                        style: TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF4C3E8A),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 4),
                   Text(
-                    'CURRENT FLEXION',
-                    style: TextStyle(
-                      fontSize: 10,
+                    '${currentAngle.toStringAsFixed(1)} deg',
+                    style: const TextStyle(
+                      fontSize: 34,
                       fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2,
                       color: Color(0xFF4C3E8A),
+                      height: 1,
                     ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'CURRENT FLEXION',
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.2, color: Color(0xFF4C3E8A)),
                   ),
                 ],
               ),
             ],
           ),
-          const SizedBox(height: 48),
+          const SizedBox(height: 28),
           SizedBox(
-            height: 200,
+            height: 220,
             child: LineChart(
               LineChartData(
-                gridData: const FlGridData(show: false),
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: true,
+                  horizontalInterval: 30,
+                  getDrawingHorizontalLine: (_) => const FlLine(color: Color(0xFFE4E2EA), strokeWidth: 1),
+                  getDrawingVerticalLine: (_) => const FlLine(color: Color(0xFFEDEBF2), strokeWidth: 1),
+                ),
+                minX: max(0, maxX - 120),
+                maxX: maxX,
+                minY: 0,
+                maxY: 180,
+                borderData: FlBorderData(show: false),
                 titlesData: FlTitlesData(
+                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                   leftTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
-                      reservedSize: 40,
-                      getTitlesWidget: (value, meta) {
-                        return Text('${value.toInt()}Â°',
-                            style: const TextStyle(fontSize: 10, color: Colors.black54));
-                      },
-                      interval: 45,
+                      reservedSize: 42,
+                      interval: 30,
+                      getTitlesWidget: (value, _) => Text('${value.toInt()} deg', style: const TextStyle(fontSize: 10, color: Colors.black54)),
                     ),
                   ),
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
-                      getTitlesWidget: (value, meta) {
-                        switch (value.toInt()) {
-                          case 0:
-                            return const Text('8 AM', style: TextStyle(fontSize: 10, color: Colors.black54));
-                          case 3:
-                            return const Text('10 AM', style: TextStyle(fontSize: 10, color: Colors.black54));
-                          case 6:
-                            return const Text('12 PM', style: TextStyle(fontSize: 10, color: Colors.black54));
-                          case 9:
-                            return const Text('2 PM', style: TextStyle(fontSize: 10, color: Colors.black54));
-                          case 12:
-                            return const Text('Now', style: TextStyle(fontSize: 10, color: Colors.black54));
-                        }
-                        return const Text('');
-                      },
-                      interval: 3,
+                      interval: 20,
+                      getTitlesWidget: (value, _) => Text('-${(maxX - value).round()}', style: const TextStyle(fontSize: 10, color: Colors.black54)),
                     ),
                   ),
-                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                 ),
-                borderData: FlBorderData(show: false),
-                minX: 0,
-                maxX: 12,
-                minY: 0,
-                maxY: 90,
                 lineBarsData: [
                   LineChartBarData(
-                    spots: const [
-                      FlSpot(0, 5),
-                      FlSpot(2, 10),
-                      FlSpot(4, 5),
-                      FlSpot(6, 40),
-                      FlSpot(7, 30),
-                      FlSpot(8.5, 5),
-                      FlSpot(11, 80),
-                      FlSpot(12, 45),
-                    ],
+                    spots: spots,
                     isCurved: true,
                     color: const Color(0xFF6750A4),
-                    barWidth: 4,
-                    isStrokeCapRound: true,
+                    barWidth: 3,
                     dotData: const FlDotData(show: false),
                     belowBarData: BarAreaData(
                       show: true,
                       gradient: LinearGradient(
                         colors: [
-                          const Color(0xFF6750A4).withOpacity(0.2),
-                          const Color(0xFF6750A4).withOpacity(0.0),
+                          const Color(0xFF6750A4).withValues(alpha: 0.2),
+                          const Color(0xFF6750A4).withValues(alpha: 0.0),
                         ],
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
@@ -282,64 +237,29 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTotalStepsCard(BuildContext context) {
+  Widget _buildStatCard(String title, String value, IconData icon, Color iconBg) {
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFFF5F4F7),
         borderRadius: BorderRadius.circular(16),
       ),
       padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFD6CFF0),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(Icons.directions_walk, color: Color(0xFF4C3E8A)),
-              ),
-              const SizedBox(width: 16),
-              const Expanded(
-                child: Text(
-                  'Total Steps',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(8)),
+            child: Icon(icon, color: const Color(0xFF4C3E8A)),
           ),
-          const SizedBox(height: 24),
-          const Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text(
-                '4,285',
-                style: TextStyle(
-                  fontSize: 36,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF4C3E8A),
-                ),
-              ),
-              SizedBox(width: 8),
-              Text(
-                '/ 6,000 goal',
-                style: TextStyle(color: Colors.black54),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: const LinearProgressIndicator(
-              value: 4285 / 6000,
-              minHeight: 8,
-              backgroundColor: Color(0xFFE2E2E6),
-              color: Color(0xFF4C3E8A),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF4C3E8A))),
+              ],
             ),
           ),
         ],
@@ -347,184 +267,83 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildActiveWearHoursCard(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFF5F4F7),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE5E0CB),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(Icons.access_time_filled, color: Color(0xFF6F701B)),
-              ),
-              const SizedBox(width: 16),
-              const Expanded(
-                child: Text(
-                  'Active Wear Hours',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          const Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text(
-                '6.5',
-                style: TextStyle(
-                  fontSize: 36,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF4C3E8A),
-                ),
-              ),
-              SizedBox(width: 8),
-              Text(
-                'hrs today',
-                style: TextStyle(color: Colors.black54),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: const LinearProgressIndicator(
-              value: 6.5 / 10.0, // Assuming 10h goal for visual demo
-              minHeight: 8,
-              backgroundColor: Color(0xFFE2E2E6),
-              color: Color(0xFF819230),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSystemAnalysisPanel(BuildContext context) {
+  Widget _buildSystemAnalysisPanel() {
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFFE8E6EB),
         borderRadius: BorderRadius.circular(16),
       ),
-      padding: const EdgeInsets.all(32),
-      child: Column(
+      padding: const EdgeInsets.all(24),
+      child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'System Analysis',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF4C3E8A),
-            ),
-          ),
-          const SizedBox(height: 24),
-          // Alert 1
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(Icons.warning_amber_rounded, color: Color(0xFF819230)),
-                SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Prolonged Inactivity',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Knee has been static for over 45 minutes. Consider performing micro-movements.',
-                        style: TextStyle(color: Colors.black54, fontSize: 13),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          // Alert 2
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(Icons.check_circle, color: Color(0xFF4C3E8A)),
-                SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Extension Target Met',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'You achieved full extension 3 times today during morning exercises.',
-                        style: TextStyle(color: Colors.black54, fontSize: 13),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 32),
-          const Text(
-            'AI INSIGHT',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(height: 12),
-          const Text(
-            'Your gait asymmetry has improved by 12% compared to last week. The current angle data suggests reduced stiffness during mid-day activity.',
+          Text('System Analysis', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF4C3E8A))),
+          SizedBox(height: 20),
+          Text('AI INSIGHT', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+          SizedBox(height: 12),
+          Text(
+            'Live BLE telemetry indicates motion consistency is improving. Continue controlled flexion and extension cycles.',
             style: TextStyle(color: Colors.black54, height: 1.5, fontSize: 14),
           ),
-          const SizedBox(height: 32),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: () {},
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF5A4D9A),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: const Text('View Detailed Report ->'),
-            ),
-          ),
         ],
+      ),
+    );
+  }
+}
+
+class _PulseDot extends StatefulWidget {
+  const _PulseDot({required this.active});
+
+  final bool active;
+
+  @override
+  State<_PulseDot> createState() => _PulseDotState();
+}
+
+class _PulseDotState extends State<_PulseDot> with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 1000))..repeat(reverse: true);
+  }
+
+  @override
+  void didUpdateWidget(covariant _PulseDot oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.active && !_controller.isAnimating) {
+      _controller.repeat(reverse: true);
+    }
+    if (!widget.active && _controller.isAnimating) {
+      _controller.stop();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final scale = widget.active ? (0.9 + _controller.value * 0.35) : 1.0;
+        return Transform.scale(
+          scale: scale,
+          child: child,
+        );
+      },
+      child: Container(
+        width: 10,
+        height: 10,
+        decoration: BoxDecoration(
+          color: widget.active ? const Color(0xFF819230) : const Color(0xFF9E9E9E),
+          shape: BoxShape.circle,
+        ),
       ),
     );
   }

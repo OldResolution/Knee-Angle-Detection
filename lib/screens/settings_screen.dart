@@ -1,24 +1,41 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../widgets/app_drawer.dart';
 import '../widgets/app_top_nav.dart';
 import '../services/preferences_service.dart';
+import '../services/ble_providers.dart';
+import '../services/knee_analysis_service.dart';
+import 'device_connectivity_screen.dart';
 import '../widgets/responsive/responsive_layout.dart';
 
-class SettingsScreen extends StatefulWidget {
+
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   String _selectedTab = 'Account Preferences';
   bool _simMode = true;
+
+  // AI & Alerts local state (synced from prefs on init)
+  double _maxAngle = 140.0;
+  double _minAngle = 5.0;
+  double _suddenMovement = 200.0;
+  bool _alertsEnabled = true;
 
   @override
   void initState() {
     super.initState();
     _simMode = PreferencesService.isSimulationMode;
+    _maxAngle = PreferencesService.maxAngleThreshold;
+    _minAngle = PreferencesService.minAngleThreshold;
+    _suddenMovement = PreferencesService.suddenMovementThreshold;
+    _alertsEnabled = PreferencesService.alertsEnabled;
   }
 
   void _onTabSelected(String tab) {
@@ -82,7 +99,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 10,
             offset: const Offset(2, 0),
           )
@@ -118,6 +135,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildSidebarItem('Data Sync', Icons.sync),
           _buildSidebarItem('Notifications', Icons.notifications),
           _buildSidebarItem('System Calibration', Icons.monitor_weight_outlined),
+          _buildSidebarItem('AI & Alerts', Icons.psychology),
           const Spacer(),
           const Divider(),
           _buildSidebarItem('Support', Icons.help, isAction: true),
@@ -172,6 +190,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _buildMobileChip('Notifications'),
             const SizedBox(width: 8),
             _buildMobileChip('System Calibration'),
+            const SizedBox(width: 8),
+            _buildMobileChip('AI & Alerts'),
           ],
         ),
       ),
@@ -193,6 +213,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     switch (_selectedTab) {
       case 'System Calibration':
         return _buildLegacySettings();
+      case 'AI & Alerts':
+        return _buildAiAlertsContent();
       case 'Account Preferences':
       default:
         return _buildAccountPreferences();
@@ -438,6 +460,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildLegacySettings() {
+    final connectionState = ref.watch(bleConnectionStateProvider);
     final isMobile = ResponsiveLayout.isMobile(context);
 
     return Column(
@@ -459,7 +482,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.02),
+                color: Colors.black.withValues(alpha: 0.02),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               )
@@ -470,9 +493,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ListTile(
                 leading: const Icon(Icons.bluetooth, color: Color(0xFF4C3E8A)),
                 title: const Text('Device Connectivity'),
-                subtitle: const Text('Manage connected sensors'),
+                subtitle: Text(connectionState.summary),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () {},
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const DeviceConnectivityScreen(),
+                    ),
+                  );
+                },
               ),
               const Divider(height: 1),
               SwitchListTile(
@@ -484,6 +513,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 onChanged: (val) {
                   setState(() => _simMode = val);
                   PreferencesService.setSimulationMode(val);
+                  unawaited(ref.read(bleControllerProvider.notifier).setSimulationMode(val));
                 },
               ),
               const Divider(height: 1),
@@ -501,6 +531,236 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 subtitle: const Text('Kinetic Cap Series V 1.0.0'),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () {},
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── AI & Alerts Tab ──────────────────────────────────────────────────
+
+  void _syncConfigToProvider() {
+    ref.read(analysisConfigProvider.notifier).state = AnalysisConfig(
+      maxAngleThreshold: _maxAngle,
+      minAngleThreshold: _minAngle,
+      suddenMovementThreshold: _suddenMovement,
+      alertsEnabled: _alertsEnabled,
+    );
+  }
+
+  Widget _buildAiAlertsContent() {
+    final isMobile = ResponsiveLayout.isMobile(context);
+    final alertCount = ref.watch(activeAlertCountProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'AI & Alerts',
+          style: TextStyle(
+            fontSize: ResponsiveLayout.headlineSize(context),
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Configure real-time monitoring thresholds and alert behaviour. '
+          '${alertCount > 0 ? '$alertCount active alert${alertCount == 1 ? '' : 's'}.' : 'No active alerts.'}',
+          style: const TextStyle(color: Colors.black54, fontSize: 16),
+        ),
+        SizedBox(height: isMobile ? 24 : 40),
+
+        // ── Master Toggle ──
+        _buildMockupCard(
+          title: 'Alert System',
+          icon: Icons.notifications_active,
+          child: Column(
+            children: [
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Enable Alerts',
+                    style: TextStyle(fontWeight: FontWeight.w600)),
+                subtitle: const Text(
+                    'Receive notifications when thresholds are breached'),
+                value: _alertsEnabled,
+                activeThumbColor: const Color(0xFF5A4D9A),
+                onChanged: (val) {
+                  setState(() => _alertsEnabled = val);
+                  PreferencesService.setAlertsEnabled(val);
+                  _syncConfigToProvider();
+                },
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // ── Angle Thresholds ──
+        _buildMockupCard(
+          title: 'Angle Thresholds',
+          icon: Icons.straighten,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Maximum Angle (°)',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+              Row(
+                children: [
+                  Expanded(
+                    child: Slider(
+                      value: _maxAngle,
+                      min: 90,
+                      max: 180,
+                      divisions: 18,
+                      activeColor: const Color(0xFF5A4D9A),
+                      label: '${_maxAngle.round()}°',
+                      onChanged: (val) {
+                        setState(() => _maxAngle = val);
+                        PreferencesService.setMaxAngleThreshold(val);
+                        _syncConfigToProvider();
+                      },
+                    ),
+                  ),
+                  SizedBox(
+                    width: 52,
+                    child: Text('${_maxAngle.round()}°',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 16)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              const Text('Minimum Angle (°)',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+              Row(
+                children: [
+                  Expanded(
+                    child: Slider(
+                      value: _minAngle,
+                      min: 0,
+                      max: 30,
+                      divisions: 30,
+                      activeColor: const Color(0xFF5A4D9A),
+                      label: '${_minAngle.round()}°',
+                      onChanged: (val) {
+                        setState(() => _minAngle = val);
+                        PreferencesService.setMinAngleThreshold(val);
+                        _syncConfigToProvider();
+                      },
+                    ),
+                  ),
+                  SizedBox(
+                    width: 52,
+                    child: Text('${_minAngle.round()}°',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 16)),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // ── Sudden Movement ──
+        _buildMockupCard(
+          title: 'Sudden Movement Detection',
+          icon: Icons.flash_on,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Velocity Spike Threshold (°/s)',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+              Row(
+                children: [
+                  Expanded(
+                    child: Slider(
+                      value: _suddenMovement,
+                      min: 50,
+                      max: 500,
+                      divisions: 45,
+                      activeColor: const Color(0xFFD32F2F),
+                      label: '${_suddenMovement.round()}°/s',
+                      onChanged: (val) {
+                        setState(() => _suddenMovement = val);
+                        PreferencesService.setSuddenMovementThreshold(val);
+                        _syncConfigToProvider();
+                      },
+                    ),
+                  ),
+                  SizedBox(
+                    width: 60,
+                    child: Text('${_suddenMovement.round()}°/s',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 16)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF0F0),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.info_outline,
+                        size: 16, color: Color(0xFFD32F2F)),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'A critical alert fires when angular velocity exceeds this limit, indicating a potentially dangerous jerky movement.',
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFFB71C1C),
+                            height: 1.4),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // ── Phase 2 Placeholder ──
+        _buildMockupCard(
+          title: 'ML Activity Detection',
+          icon: Icons.model_training,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8EAF6),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.science,
+                        size: 16, color: Color(0xFF5C6BC0)),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'TensorFlow Lite model integration coming in Phase 2. '
+                        'This will provide AI-powered activity classification.',
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: Color(0xFF303F9F),
+                            height: 1.4),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
