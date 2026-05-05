@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:math' as math;
 import '../services/profile_service.dart';
 import '../screens/live_angle_screen.dart';
@@ -193,7 +193,7 @@ class _AppDrawerState extends State<AppDrawer> {
                       width: double.infinity,
                       child: OutlinedButton.icon(
                         onPressed: () async {
-                          await Supabase.instance.client.auth.signOut();
+                          await FirebaseAuth.instance.signOut();
                           if (!context.mounted) return;
                           Navigator.pushReplacement(
                             context,

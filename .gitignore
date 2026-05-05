@@ -1,53 +1,102 @@
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
-.DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
+# Agent skills and agent metadata
+.agents/
+skills-lock.json
+# Top-level .gitignore for Flutter projects
 
-# IntelliJ related
+# OS generated files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# Editor directories and files
+.idea/
 *.iml
 *.ipr
 *.iws
-.idea/
+# Uncomment to ignore VS Code workspace settings if you don't want to commit them
+# .vscode/
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
-
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
+# Dart/Flutter
 .dart_tool/
+.flutter-plugins
 .flutter-plugins-dependencies
+.packages
 .pub-cache/
-.pub/
 /build/
 /coverage/
+**/doc/api/
 
-# Symbolication related
+# Flutter Xcode / iOS
+**/ios/Flutter/.last_build_id
+**/Flutter/ephemeral/
+**/Generated.xcconfig
+**/Flutter/Flutter.framework
+
+# Android
+/android/.gradle/
+/android/app/debug/
+/android/app/profile/
+/android/app/release/
+/android/captures/
+/.gradle
+/local.properties
+key.properties
+*.keystore
+*.jks
+
+# Native build artifacts
+.cxx/
+
+# IDE / build caches
+/.gradle/
+/build/
+
+# Keys, secrets and environment files (keep out of repo)
+.env
+*.env
+key.properties
+google-services.json
+
+# Crash symbol files and maps
 app.*.symbols
-
-# Obfuscation related
 app.*.map.json
 
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
+# Temporary files
+*.log
+*.tmp
+*.temp
+*.swp
+*.lock
 
-# Agent files
-.env
-.tmp/
-.agents/
-skills-lock.json
-Instruction.md
+# Generated files and folders (ignore generated sources and intermediates)
+**/generated/
+**/gen/
+**/Generated/
+**/build/generated/
+**/*/generated/
+*.g.dart
+*.pb.dart
+*.pbjson.dart
+*.pbenum.dart
+*.freezed.dart
+*.template.dart
+*.template.dart.js
+*.snapshot
+*.flutter-plugins
+*.flutter-plugins-dependencies
+
+# Node / JS
+node_modules/
+
+# Test output
+coverage/
+
+# Misc
+.history
+.vagrant/
+.cache
+
+# Keep project metadata files (do NOT ignore these):
+# - pubspec.yaml, pubspec.lock (apps should commit pubspec.lock),
+# - Instruction.md is a project file and should be tracked.
 

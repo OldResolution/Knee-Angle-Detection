@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../services/profile_service.dart';
 import '../widgets/primary_button.dart';
 import '../widgets/responsive/responsive_layout.dart';
@@ -43,19 +43,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final response = await Supabase.instance.client.auth.signUp(
+      final response = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: _emailController.text,
         password: _passwordController.text,
-        data: {
-          'name': _nameController.text,
-          'age': _ageController.text,
-          'mobile': _mobileController.text,
-          'gender': _selectedGender,
-        },
       );
       if (response.user != null) {
+        await response.user!.updateDisplayName(_nameController.text.trim());
         await ProfileService.upsertProfileForUserId(
-          userId: response.user!.id,
+          userId: response.user!.uid,
           name: _nameController.text.trim(),
           email: _emailController.text.trim(),
           metadata: {

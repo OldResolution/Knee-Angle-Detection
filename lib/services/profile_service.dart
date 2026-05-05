@@ -1,24 +1,23 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ProfileService {
   ProfileService._();
 
-  static SupabaseClient get _client => Supabase.instance.client;
+  static FirebaseAuth get _auth => FirebaseAuth.instance;
+  static FirebaseFirestore get _firestore => FirebaseFirestore.instance;
 
   static Map<String, dynamic> mergeProfileData({
     User? user,
     Map<String, dynamic>? profileRow,
     Map<String, dynamic>? metadata,
   }) {
-    final resolvedMetadata = metadata ??
-        (user == null
-            ? const <String, dynamic>{}
-            : Map<String, dynamic>.from(user.userMetadata ?? const {}));
+    final resolvedMetadata = metadata ?? const <String, dynamic>{};
 
     final fallback = <String, dynamic>{
-      'id': user?.id,
+      'id': user?.uid,
       'email': user?.email,
-      'name': resolvedMetadata['name'],
+      'name': resolvedMetadata['name'] ?? user?.displayName,
       'mobile': resolvedMetadata['mobile'],
       'age': resolvedMetadata['age'],
       'gender': resolvedMetadata['gender'],
@@ -34,17 +33,16 @@ class ProfileService {
   }
 
   static Future<Map<String, dynamic>?> fetchCurrentUserProfile() async {
-    final user = _client.auth.currentUser;
+    final user = _auth.currentUser;
     if (user == null) {
       return null;
     }
 
     try {
-      final row =
-          await _client.from('profiles').select().eq('id', user.id).single();
+      final doc = await _firestore.collection('profiles').doc(user.uid).get();
       return mergeProfileData(
         user: user,
-        profileRow: Map<String, dynamic>.from(row),
+        profileRow: doc.exists ? doc.data() : null,
       );
     } catch (_) {
       return mergeProfileData(user: user);
@@ -52,7 +50,7 @@ class ProfileService {
   }
 
   static Future<void> ensureCurrentUserProfile() async {
-    final user = _client.auth.currentUser;
+    final user = _auth.currentUser;
     if (user == null) {
       return;
     }
@@ -62,7 +60,7 @@ class ProfileService {
       return;
     }
 
-    await _upsertProfileRow(user.id, merged);
+    await _upsertProfileRow(user.uid, merged);
   }
 
   static Future<void> upsertCurrentUserProfile({
@@ -72,16 +70,16 @@ class ProfileService {
     int? age,
     String? gender,
   }) async {
-    final user = _client.auth.currentUser;
+    final user = _auth.currentUser;
     if (user == null) {
       return;
     }
 
     await upsertProfileForUserId(
-      userId: user.id,
+      userId: user.uid,
       email: email ?? user.email,
-      metadata: Map<String, dynamic>.from(user.userMetadata ?? const {}),
-      name: name,
+      metadata: const {},
+      name: name ?? user.displayName,
       mobile: mobile,
       age: age,
       gender: gender,
@@ -120,7 +118,7 @@ class ProfileService {
     }..removeWhere((key, value) => value == null);
 
     try {
-      await _client.from('profiles').upsert(payload);
+      await _firestore.collection('profiles').doc(userId).set(payload, SetOptions(merge: true));
     } catch (_) {
       // The app can still fall back to auth metadata if the profiles table
       // is unavailable, so we keep auth flows resilient here.

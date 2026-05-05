@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../models/user_goals.dart';
 import '../services/ble_data_service.dart';
@@ -89,18 +89,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _sendPasswordReset() async {
-    final email = Supabase.instance.client.auth.currentUser?.email;
+    final email = FirebaseAuth.instance.currentUser?.email;
     if (email == null || email.isEmpty) {
       _showSnack('No account email available for password reset.');
       return;
     }
 
-    await Supabase.instance.client.auth.resetPasswordForEmail(email);
+    await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
     _showSnack('Password reset link sent to $email.');
   }
 
   Future<void> _signOut() async {
-    await Supabase.instance.client.auth.signOut();
+    await FirebaseAuth.instance.signOut();
     if (!mounted) {
       return;
     }
@@ -382,7 +382,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             return SettingsSectionCard(
               title: 'Profile',
               subtitle:
-                  'This summary is merged from Supabase auth metadata and the profiles table.',
+                  'This summary is merged from Firebase auth metadata and the profiles table.',
               icon: Icons.badge_outlined,
               trailing: IconButton(
                 tooltip: 'Refresh profile',

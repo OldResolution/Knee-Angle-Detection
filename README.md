@@ -7,7 +7,7 @@ Flutter app for knee-health monitoring with BLE data streaming, gait analysis, a
 - Live knee angle tracking from BLE device
 - Step/activity monitoring
 - On-device gait classification using model in `assets/models/gait_model.json`
-- User auth and profile data with Supabase
+- User auth and profile data with Firebase
 - Local session storage with Hive
 - Simulation mode for testing without BLE hardware
 
@@ -31,32 +31,9 @@ cd "Gopal Application"
 flutter pub get
 ```
 
-## 2) Configure environment (.env)
+## 2) Configure Firebase
 
-App startup loads `.env` and requires these keys:
-
-- `SUPABASE_URL`
-- `SUPABASE_ANON_KEY`
-
-Create `.env` in project root.
-
-PowerShell:
-
-```powershell
-@"
-SUPABASE_URL=https://YOUR_PROJECT.supabase.co
-SUPABASE_ANON_KEY=YOUR_ANON_KEY
-"@ | Set-Content .env
-```
-
-macOS/Linux:
-
-```bash
-cat > .env <<'EOF'
-SUPABASE_URL=https://YOUR_PROJECT.supabase.co
-SUPABASE_ANON_KEY=YOUR_ANON_KEY
-EOF
-```
+Make sure to add `google-services.json` to `android/app` and follow standard Firebase setup. Or configure via FlutterFire CLI.
 
 ## 3) Run locally (debug)
 
@@ -184,10 +161,10 @@ On Android 12+, ensure Bluetooth permissions are allowed when prompted.
 
 ## 8) Troubleshooting
 
-### `.env` error or crash on startup
+### Firebase Initialization Error
 
-- Confirm `.env` exists at project root
-- Confirm both Supabase keys are present and non-empty
+- Confirm `google-services.json` exists in `android/app`
+- Check Firebase configuration in console
 
 ### `adb` command not found
 

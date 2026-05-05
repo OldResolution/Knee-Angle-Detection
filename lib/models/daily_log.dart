@@ -1,5 +1,3 @@
-import 'package:hive/hive.dart';
-
 class DailyLog {
   DailyLog({
     required this.date,
@@ -102,62 +100,6 @@ class DailyLog {
       goalExerciseMet: false,
       goalActiveHoursMet: false,
     );
-  }
-}
-
-class DailyLogAdapter extends TypeAdapter<DailyLog> {
-  @override
-  final int typeId = 2;
-
-  @override
-  DailyLog read(BinaryReader reader) {
-    final count = reader.readByte();
-    final values = <int, dynamic>{};
-    for (var i = 0; i < count; i++) {
-      values[reader.readByte()] = reader.read();
-    }
-
-    return DailyLog(
-      date: values[0] is DateTime ? values[0] as DateTime : DateTime.now(),
-      totalSteps: (values[1] as num?)?.toInt() ?? 0,
-      totalCalories: (values[2] as num?)?.toDouble() ?? 0,
-      totalActiveMinutes: (values[3] as num?)?.toInt() ?? 0,
-      totalSessions: (values[4] as num?)?.toInt() ?? 0,
-      avgKneeAngle: (values[5] as num?)?.toDouble() ?? 0,
-      peakKneeAngle: (values[6] as num?)?.toDouble() ?? 0,
-      avgSpeed: (values[7] as num?)?.toDouble() ?? 0,
-      goalStepsMet: values[8] == true,
-      goalExerciseMet: values[9] == true,
-      goalActiveHoursMet: values[10] == true,
-    );
-  }
-
-  @override
-  void write(BinaryWriter writer, DailyLog obj) {
-    writer
-      ..writeByte(11)
-      ..writeByte(0)
-      ..write(obj.date)
-      ..writeByte(1)
-      ..write(obj.totalSteps)
-      ..writeByte(2)
-      ..write(obj.totalCalories)
-      ..writeByte(3)
-      ..write(obj.totalActiveMinutes)
-      ..writeByte(4)
-      ..write(obj.totalSessions)
-      ..writeByte(5)
-      ..write(obj.avgKneeAngle)
-      ..writeByte(6)
-      ..write(obj.peakKneeAngle)
-      ..writeByte(7)
-      ..write(obj.avgSpeed)
-      ..writeByte(8)
-      ..write(obj.goalStepsMet)
-      ..writeByte(9)
-      ..write(obj.goalExerciseMet)
-      ..writeByte(10)
-      ..write(obj.goalActiveHoursMet);
   }
 }
 

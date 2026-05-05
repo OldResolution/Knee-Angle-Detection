@@ -1,5 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 
 import '../models/daily_log.dart';
 import '../models/session_record.dart';
@@ -14,66 +15,74 @@ class StorageService {
 
   static final StorageService instance = StorageService._();
 
-  static const String _sessionsBoxName = 'sessions';
-  static const String _dailyLogsBoxName = 'dailyLogs';
-
-  late final Box<SessionRecord> _sessionsBox;
-  late final Box<DailyLog> _dailyLogsBox;
-
-  bool _isInitialized = false;
+  FirebaseFirestore get _firestore => FirebaseFirestore.instance;
+  FirebaseAuth get _auth => FirebaseAuth.instance;
 
   Future<void> init() async {
-    if (_isInitialized) {
-      return;
-    }
-
-    await Hive.initFlutter();
-
-    if (!Hive.isAdapterRegistered(1)) {
-      Hive.registerAdapter(SessionRecordAdapter());
-    }
-    if (!Hive.isAdapterRegistered(2)) {
-      Hive.registerAdapter(DailyLogAdapter());
-    }
-
-    _sessionsBox = await Hive.openBox<SessionRecord>(_sessionsBoxName);
-    _dailyLogsBox = await Hive.openBox<DailyLog>(_dailyLogsBoxName);
-    _isInitialized = true;
+    // Firestore handles its own initialization and offline persistence.
   }
 
+  String get _uid {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw StateError('User must be logged in to access storage.');
+    }
+    return user.uid;
+  }
+
+  CollectionReference<Map<String, dynamic>> get _sessionsRef =>
+      _firestore.collection('users').doc(_uid).collection('sessions');
+
+  CollectionReference<Map<String, dynamic>> get _dailyLogsRef =>
+      _firestore.collection('users').doc(_uid).collection('dailyLogs');
+
   Future<void> saveSession(SessionRecord session) async {
-    _ensureInitialized();
-    await _sessionsBox.put(session.id, session);
-    await _updateDailyLogFromSession(session);
+    if (_auth.currentUser == null) return; // Ignore if not logged in
+
+    try {
+      await _sessionsRef.doc(session.id).set(session.toJson());
+      await _updateDailyLogFromSession(session);
+    } catch (e) {
+      print('Error saving session to Firestore: $e');
+    }
   }
 
   Future<DailyLog> getDailyLog(DateTime date) async {
-    _ensureInitialized();
-    final key = _dayKey(date);
-    final existing = _dailyLogsBox.get(key);
-    if (existing != null) {
-      return existing;
+    if (_auth.currentUser == null) return DailyLog.emptyForDate(date);
+
+    final key = _dayKey(date).toString();
+    final doc = await _dailyLogsRef.doc(key).get();
+
+    if (doc.exists && doc.data() != null) {
+      return DailyLog.fromJson(doc.data()!);
     }
 
     final empty = DailyLog.emptyForDate(date);
-    await _dailyLogsBox.put(key, empty);
+    await _dailyLogsRef.doc(key).set(empty.toJson());
     return empty;
   }
 
   Future<List<SessionRecord>> getSessionsForDate(DateTime date) async {
-    _ensureInitialized();
+    if (_auth.currentUser == null) return [];
+
     final dayStart = DateTime(date.year, date.month, date.day);
     final dayEnd = dayStart.add(const Duration(days: 1));
-    final sessions = _sessionsBox.values.where((session) {
-      return !session.startTime.isBefore(dayStart) && session.startTime.isBefore(dayEnd);
-    }).toList();
+
+    final snapshot = await _sessionsRef
+        .where('startTime', isGreaterThanOrEqualTo: dayStart.toIso8601String())
+        .where('startTime', isLessThan: dayEnd.toIso8601String())
+        .get();
+
+    final sessions = snapshot.docs.map((doc) => SessionRecord.fromJson(doc.data())).toList();
     sessions.sort((a, b) => b.startTime.compareTo(a.startTime));
     return sessions;
   }
 
   Future<List<SessionRecord>> getAllSessions() async {
-    _ensureInitialized();
-    final sessions = _sessionsBox.values.toList();
+    if (_auth.currentUser == null) return [];
+
+    final snapshot = await _sessionsRef.get();
+    final sessions = snapshot.docs.map((doc) => SessionRecord.fromJson(doc.data())).toList();
     sessions.sort((a, b) => b.startTime.compareTo(a.startTime));
     return sessions;
   }
@@ -87,14 +96,29 @@ class StorageService {
   }
 
   Future<void> clearAllData() async {
-    _ensureInitialized();
-    await _sessionsBox.clear();
-    await _dailyLogsBox.clear();
+    if (_auth.currentUser == null) return;
+
+    final sessions = await _sessionsRef.get();
+    for (var doc in sessions.docs) {
+      await doc.reference.delete();
+    }
+
+    final logs = await _dailyLogsRef.get();
+    for (var doc in logs.docs) {
+      await doc.reference.delete();
+    }
   }
 
   Future<void> _updateDailyLogFromSession(SessionRecord session) async {
-    final key = _dayKey(session.startTime);
-    final existing = _dailyLogsBox.get(key) ?? DailyLog.emptyForDate(session.startTime);
+    if (_auth.currentUser == null) return;
+
+    final key = _dayKey(session.startTime).toString();
+
+    // Get existing
+    final doc = await _dailyLogsRef.doc(key).get();
+    final existing = doc.exists && doc.data() != null
+        ? DailyLog.fromJson(doc.data()!)
+        : DailyLog.emptyForDate(session.startTime);
 
     final sessionsToday = await getSessionsForDate(session.startTime);
     final totalSessions = sessionsToday.length;
@@ -106,13 +130,13 @@ class StorageService {
     );
 
     final avgKneeAngle = totalSessions == 0
-      ? 0.0
+        ? 0.0
         : sessionsToday.fold<double>(0.0, (sum, s) => sum + s.avgAngle) / totalSessions;
     final peakKneeAngle = sessionsToday.fold<double>(0.0, (maxValue, s) {
       return s.peakAngle > maxValue ? s.peakAngle : maxValue;
     });
     final avgSpeed = totalSessions == 0
-      ? 0.0
+        ? 0.0
         : sessionsToday.fold<double>(0.0, (sum, s) => sum + s.avgSpeed) / totalSessions;
 
     final updated = existing.copyWith(
@@ -129,7 +153,7 @@ class StorageService {
       goalActiveHoursMet: (totalActiveMinutes / 60.0) >= PreferencesService.activeHoursGoal,
     );
 
-    await _dailyLogsBox.put(key, updated);
+    await _dailyLogsRef.doc(key).set(updated.toJson());
   }
 
   int _exerciseMinutesForDay(List<SessionRecord> sessions) {
@@ -139,14 +163,18 @@ class StorageService {
   }
 
   Future<List<DailyLog>> _getRecentLogs(int days) async {
-    _ensureInitialized();
+    if (_auth.currentUser == null) return [];
+
     final today = DateTime.now();
     final logs = <DailyLog>[];
 
     for (var i = days - 1; i >= 0; i--) {
       final date = DateTime(today.year, today.month, today.day).subtract(Duration(days: i));
-      final key = _dayKey(date);
-      logs.add(_dailyLogsBox.get(key) ?? DailyLog.emptyForDate(date));
+      final key = _dayKey(date).toString();
+      final doc = await _dailyLogsRef.doc(key).get();
+      logs.add(doc.exists && doc.data() != null
+          ? DailyLog.fromJson(doc.data()!)
+          : DailyLog.emptyForDate(date));
     }
 
     return logs;
@@ -154,11 +182,5 @@ class StorageService {
 
   int _dayKey(DateTime date) {
     return date.year * 10000 + date.month * 100 + date.day;
-  }
-
-  void _ensureInitialized() {
-    if (!_isInitialized) {
-      throw StateError('StorageService.init() must be called before usage.');
-    }
   }
 }

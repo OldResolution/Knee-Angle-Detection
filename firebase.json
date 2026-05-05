@@ -1,0 +1,36 @@
+{
+  "firestore": {
+    "database": "(default)",
+    "location": "us-central",
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "auth": {
+    "providers": {
+      "emailPassword": true
+    }
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "gopalproject-77869",
+          "appId": "1:388921890495:android:73a0884622430e0f7f580a",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "gopalproject-77869",
+          "configurations": {
+            "android": "1:388921890495:android:73a0884622430e0f7f580a",
+            "ios": "1:388921890495:ios:ef7f0413efb01ff87f580a",
+            "macos": "1:388921890495:ios:ef7f0413efb01ff87f580a",
+            "web": "1:388921890495:web:42081ccea8c9316b7f580a",
+            "windows": "1:388921890495:web:47a3860c984d62ab7f580a"
+          }
+        }
+      }
+    }
+  }
+}
